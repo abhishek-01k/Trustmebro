@@ -6,6 +6,8 @@ type GlobalContextType = {
   setIsLoggedIn: (isLoggedIn: boolean) => void;
   activeTab: ActiveTab;
   setActiveTab: (activeTab: ActiveTab) => void;
+  gameStarted: boolean;
+  setGameStarted: (gameStarted: boolean) => void;
 };
 
 export const GlobalContext = createContext<GlobalContextType | null>(null);
@@ -18,9 +20,10 @@ export const GlobalContextProvider = ({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
+  const [gameStarted, setGameStarted] = useState<boolean>(false);
 
   return (
-    <GlobalContext.Provider value={{ isLoggedIn, setIsLoggedIn, activeTab, setActiveTab }}>
+    <GlobalContext.Provider value={{ isLoggedIn, setIsLoggedIn, activeTab, setActiveTab, gameStarted, setGameStarted }}>
       {children}
     </GlobalContext.Provider>
   );

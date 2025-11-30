@@ -3,9 +3,15 @@ import { useGlobalContext } from "@/src/context/global-context";
 import { HomeScreen } from "@/src/modules/home";
 import { LeaderboardScreen } from "@/src/modules/leaderboard";
 import { ProfileScreen } from "@/src/modules/profile";
+import { StartGame } from "@/src/modules/game";
 
 const BodySection = () => {
-  const { activeTab } = useGlobalContext();
+  const { activeTab, gameStarted } = useGlobalContext();
+
+  if (gameStarted) {
+    return (<StartGame />)
+  }
+
   return (
     <div className="flex-1 overflow-hidden">
       {activeTab === "home" && <HomeScreen />}

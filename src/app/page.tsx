@@ -6,11 +6,17 @@ import { useLoginToMiniApp } from "@privy-io/react-auth/farcaster";
 import { usePrivy } from "@privy-io/react-auth";
 import { Button } from "../components/ui/button";
 import LoadingScreen from "../components/loading-screen";
-import { BodySection, BottomNavigation, HeaderSection } from "../components/layout";
+import {
+  BodySection,
+  BottomNavigation,
+  HeaderSection,
+} from "../components/layout";
+import { useGlobalContext } from "../context/global-context";
 
 export default function Home() {
   const { ready, authenticated, login } = usePrivy();
   const { initLoginToMiniApp, loginToMiniApp } = useLoginToMiniApp();
+  const { gameStarted } = useGlobalContext();
 
   const handleMiniAppLogin = useCallback(async () => {
     if (ready && !authenticated) {
@@ -33,9 +39,7 @@ export default function Home() {
   }, [handleMiniAppLogin]);
 
   if (!ready) {
-    return (
-      <LoadingScreen/>
-    );
+    return <LoadingScreen />;
   }
 
   if (!authenticated) {
@@ -48,9 +52,9 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <HeaderSection/>
-        <BodySection/>
-        <BottomNavigation/>
+      {!gameStarted && <HeaderSection />}
+      <BodySection />
+      {!gameStarted && <BottomNavigation />}
     </div>
   );
 }
