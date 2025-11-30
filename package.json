@@ -6,7 +6,16 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "contracts:build": "cd contracts && forge build",
+    "contracts:test": "cd contracts && forge test",
+    "contracts:test:gas": "cd contracts && forge test --gas-report",
+    "contracts:test:coverage": "cd contracts && forge coverage",
+    "contracts:test:watch": "cd contracts && forge test --watch",
+    "contracts:format": "cd contracts && forge fmt",
+    "contracts:install": "cd contracts && forge install",
+    "contracts:anvil": "cd contracts && anvil",
+    "contracts:script": "cd contracts && forge script"
   },
   "dependencies": {
     "@farcaster/miniapp-sdk": "^0.2.1",
