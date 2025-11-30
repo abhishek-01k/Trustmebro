@@ -50,6 +50,8 @@
   --color-brand-bg-dark: var(--brand-bg-dark);
   --color-brand-card-light: var(--brand-card-light);
   --color-brand-card-medium: var(--brand-card-medium);
+  /* Pink Color - Based on #ed1b76 */
+  --color-pink: var(--pink);
 }
 
 :root {
@@ -94,6 +96,9 @@
   --brand-bg-dark: #08070F; /* Dark background gradient */
   --brand-card-light: #120F23; /* Light card background */
   --brand-card-medium: #1A1630; /* Medium card background */
+  
+  /* Pink Color - Based on #ed1b76 */
+  --pink: #ed1b76;
 }
 
 .dark {
