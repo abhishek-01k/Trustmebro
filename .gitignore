@@ -41,3 +41,14 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# foundry
+cache_forge/
+out/
+broadcast/
+*.sol.js
+
+# scripts
+scripts/.deployed-address.json
+contracts/cache_forge/
+contracts/cache/*
