@@ -15,7 +15,9 @@
     "contracts:format": "cd contracts && forge fmt",
     "contracts:install": "cd contracts && forge install",
     "contracts:anvil": "cd contracts && anvil",
-    "contracts:script": "cd contracts && forge script"
+    "contracts:script": "cd contracts && forge script",
+    "scripts:deploy": "tsx contracts/js-scripts/deploy.ts",
+    "scripts:interact": "tsx contracts/js-scripts/interact.ts"
   },
   "dependencies": {
     "@farcaster/miniapp-sdk": "^0.2.1",

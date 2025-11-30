@@ -1,2 +1,3 @@
 lib/*/*
 !lib/*/.gitmodules
+*.deployed-address.json

@@ -3,7 +3,7 @@ import { join } from "path";
 import type { Abi } from "viem";
 
 const DEPLOYED_ADDRESS_FILE = join(__dirname, "../.deployed-address.json");
-const CONTRACT_JSON_PATH = join(__dirname, "../../contracts/out/MultiplierGame.sol/MultiplierGame.json");
+const CONTRACT_JSON_PATH = join(__dirname, "../../out/MultiplierGame.sol/MultiplierGame.json");
 
 export interface DeployedAddress {
   address: string;

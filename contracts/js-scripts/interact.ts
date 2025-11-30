@@ -79,8 +79,8 @@ async function main() {
 
   // Generate seed and calculate payout
   const seed = keccak256(toBytes(`game-seed-${Date.now()}`));
-  const betAmount = BigInt("500000000000000000"); // 0.5 ETH
-  const payoutAmount = BigInt("1000000000000000000"); // 1 ETH (2x multiplier)
+  const betAmount = BigInt("100000000000000000"); // 0.001 ETH
+  const payoutAmount = BigInt("100000000000000000"); // 0.01 ETH (2x multiplier)
   const commitmentHash = MultiplierGameClient.createCommitment(seed, payoutAmount);
   const preliminaryId = keccak256(toBytes("preliminary-game-1"));
 

@@ -79,7 +79,7 @@ async function main() {
     functionName: "refillPot",
     account,
     chain: anvil,
-    value: BigInt("100000000000000000000"), // 100 ETH
+    value: BigInt("1000000000000000000"), // 1 ETH
   });
 
   await publicClient.waitForTransactionReceipt({ hash: fundHash });
