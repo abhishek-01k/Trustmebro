@@ -1,0 +1,83 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User model - stores Farcaster user data
+model User {
+  id            String   @id @default(cuid())
+  farcasterFid  Int      @unique
+  username      String
+  avatar        String?
+  walletAddress String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  games        Game[]
+  transactions Transaction[]
+
+  @@index([farcasterFid])
+  @@index([walletAddress])
+}
+
+// Game result enum
+enum GameResult {
+  WIN
+  LOSS
+  DRAW
+}
+
+// Game model - stores individual game sessions
+model Game {
+  id         String     @id @default(cuid())
+  userId     String
+  result     GameResult
+  profitLoss Decimal    @db.Decimal(18, 8) // Supports crypto precision
+  gameType   String     // e.g., "prediction", "trading", "dice"
+  metadata   Json?      // Store game-specific data
+  playedAt   DateTime   @default(now())
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([userId])
+  @@index([playedAt])
+  @@index([userId, playedAt])
+}
+
+// Transaction type enum
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  GAME_ENTRY
+  GAME_PAYOUT
+}
+
+// Transaction model - stores all financial transactions
+model Transaction {
+  id        String          @id @default(cuid())
+  userId    String
+  gameId    String?
+  type      TransactionType
+  amount    Decimal         @db.Decimal(18, 8) // Supports crypto precision
+  txHash    String?         // Blockchain transaction hash
+  createdAt DateTime        @default(now())
+
+  // Relations
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game? @relation(fields: [gameId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([gameId])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
