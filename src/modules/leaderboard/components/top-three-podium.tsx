@@ -2,6 +2,7 @@ import React from "react";
 import { Crown, Coins } from "lucide-react";
 import { LeaderboardEntry } from "@/src/types/global";
 import { formatScore, truncateToChars } from "@/src/lib/utils";
+import Image from "next/image";
 
 interface TopThreePodiumProps {
   entry: LeaderboardEntry;
@@ -59,7 +60,13 @@ export const TopThreePodium = ({ entry, position }: TopThreePodiumProps) => {
         position === 1 ? "border-yellow-400/50" : position === 2 ? "border-gray-300/50" : "border-amber-600/50"
       }`}>
         {entry.avatar ? (
-          <img src={entry.avatar} alt={entry.username} className="w-full h-full object-cover" />
+          <Image 
+            src={entry.avatar} 
+            alt={entry.username} 
+            fill
+            className="object-cover" 
+            sizes={`${position === 1 ? '96px' : position === 2 ? '72px' : '56px'}`}
+          />
         ) : (
           <div className="w-full h-full bg-[#1A1630] flex items-center justify-center text-white font-semibold">
             {entry.username.charAt(0)}

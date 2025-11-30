@@ -1,5 +1,6 @@
 import { cn, formatScore } from '@/src/lib/utils';
 import { LeaderboardEntry } from '@/src/types/global';
+import Image from 'next/image';
 import React from 'react';
 
 const LeaderboardItem = ({ entry, isCurrentUser = false }: { entry: LeaderboardEntry; isCurrentUser?: boolean }) => {
@@ -29,12 +30,14 @@ const LeaderboardItem = ({ entry, isCurrentUser = false }: { entry: LeaderboardE
           </div>
 
           {/* Profile Picture */}
-          <div className="shrink-0 w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-[#1A1630]">
+          <div className="relative shrink-0 w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-[#1A1630]">
             {entry.avatar ? (
-              <img 
+              <Image 
                 src={entry.avatar} 
                 alt={entry.username} 
-                className="w-full h-full object-cover" 
+                fill
+                className="object-cover" 
+                sizes="40px"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-white font-semibold text-sm">

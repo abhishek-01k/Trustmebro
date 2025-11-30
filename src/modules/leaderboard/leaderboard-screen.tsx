@@ -7,8 +7,8 @@ import { LeaderboardContent } from "./components/leaderboard-content";
 import { UserRankSection } from "./components/user-rank-section";
 
 // Generate random avatar URLs (using placeholder service)
-const getAvatarUrl = (seed: string) => {
-  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+const getAvatarUrl = () => {
+  return `https://assets.coingecko.com/coins/images/38927/standard/monad.png?1764042736`;
 };
 
 // Dummy data
@@ -40,7 +40,7 @@ const generateDummyData = (): LeaderboardEntry[] => {
     rank: index + 1,
     username,
     profit: Math.floor(Math.random() * 100) + 500,
-    avatar: getAvatarUrl(username),
+    avatar: getAvatarUrl(),
     userId: `100${60000 + index}`,
   }));
 };
@@ -50,7 +50,7 @@ const currentUser: LeaderboardEntry = {
   rank: 42,
   username: "You",
   profit: 125,
-  avatar: getAvatarUrl("You"),
+  avatar: getAvatarUrl(),
   userId: "10066542",
 };
 
