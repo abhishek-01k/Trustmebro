@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { useFundWallet, usePrivy, useWallets } from "@privy-io/react-auth";
 import { useReadContract } from "wagmi";
 import { base } from "wagmi/chains";
-import { USDC_ADDRESS, USDC_DECIMALS, USDC_ABI } from "@/src/constants";
+import { USDC_ADDRESS, USDC_DECIMALS, USDC_ABI } from "@/constants";
 import { formatUnits } from "viem";
 import { PlusIcon, Wallet } from "lucide-react";
 import { Button } from "../ui/button";

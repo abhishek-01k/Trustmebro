@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
-import { useMiniAppContext } from "@/src/context/mini-app-context";
-import { UserRegistrationPayload } from "@/src/types/global";
+import { useMiniAppContext } from "@/context/mini-app-context";
+import { UserRegistrationPayload } from "@/types/global";
 
 interface UseUserRegistrationResult {
   isRegistered: boolean;

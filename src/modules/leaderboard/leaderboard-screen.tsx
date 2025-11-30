@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ScrollArea } from "@/src/components/ui/scroll-area";
-import { LeaderboardEntry } from "@/src/types/global";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { LeaderboardEntry } from "@/types/global";
 import { LeaderboardContent } from "./components/leaderboard-content";
 import { UserRankSection } from "./components/user-rank-section";
 

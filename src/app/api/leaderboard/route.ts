@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/src/lib/prisma";
+import prisma from "@/lib/prisma";
 
 interface LeaderboardEntry {
   rank: number;
@@ -7,6 +7,18 @@ interface LeaderboardEntry {
   username: string;
   pfp: string | null;
   pnl: number;
+}
+
+interface GameWithProfitLoss {
+  profitLoss: { toString(): string };
+}
+
+interface UserWithGames {
+  id: string;
+  farcasterFid: number;
+  username: string;
+  avatar: string | null;
+  games: GameWithProfitLoss[];
 }
 
 export async function GET(request: NextRequest) {
@@ -18,7 +30,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Get users with their total profit/loss aggregated from games
-    const usersWithProfit = await prisma.user.findMany({
+    const usersWithProfit: UserWithGames[] = await prisma.user.findMany({
       select: {
         id: true,
         farcasterFid: true,
@@ -34,10 +46,10 @@ export async function GET(request: NextRequest) {
 
     // Calculate total profit for each user and sort by PnL (descending)
     const leaderboardData = usersWithProfit
-      .map((user) => {
+      .map((user: UserWithGames) => {
         const totalPnl = user.games.reduce(
-          (sum: number, game: { profitLoss: { toNumber: () => number } }) =>
-            sum + game.profitLoss.toNumber(),
+          (sum: number, game: GameWithProfitLoss) =>
+            sum + Number(game.profitLoss),
           0
         );
         return {
@@ -48,11 +60,11 @@ export async function GET(request: NextRequest) {
           pnl: totalPnl,
         };
       })
-      .sort((a, b) => b.pnl - a.pnl);
+      .sort((a: { pnl: number }, b: { pnl: number }) => b.pnl - a.pnl);
 
     // Add rank to all entries
     const rankedData: LeaderboardEntry[] = leaderboardData.map(
-      (entry, index) => ({
+      (entry: { fid: number; username: string; pfp: string | null; pnl: number }, index: number) => ({
         rank: index + 1,
         fid: entry.fid,
         username: entry.username,
@@ -65,7 +77,7 @@ export async function GET(request: NextRequest) {
     let currentUser: LeaderboardEntry | null = null;
     if (currentUserFid) {
       const fid = parseInt(currentUserFid, 10);
-      currentUser = rankedData.find((entry) => entry.fid === fid) || null;
+      currentUser = rankedData.find((entry: LeaderboardEntry) => entry.fid === fid) || null;
     }
 
     // Apply pagination to leaderboard

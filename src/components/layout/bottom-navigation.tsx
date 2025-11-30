@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { Home, Trophy, User } from 'lucide-react';
-import { cn } from '@/src/lib/utils';
-import { useGlobalContext } from '@/src/context/global-context';
+import { cn } from '@/lib/utils';
+import { useGlobalContext } from '@/context/global-context';
 
 type NavItem = 'home' | 'leaderboard' | 'profile';
 
