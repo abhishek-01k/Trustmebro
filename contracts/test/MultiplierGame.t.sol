@@ -52,21 +52,21 @@ contract MultiplierGameTest is Test {
 
     // ============ Helper Functions ============
 
-    function _createReveal(string memory seed) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(seed));
+    /// @notice Create a commitment from seed and payout amount
+    /// @dev commitment = keccak256(abi.encodePacked(seed, payoutAmount))
+    function _createCommitment(bytes32 seed, uint256 payoutAmount) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(seed, payoutAmount));
     }
 
-    function _createCommitment(bytes32 reveal) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(reveal));
-    }
-
-    function _createGame(
+    /// @notice Helper to create a game with a specific seed and payout
+    function _createGameWithPayout(
         address _player,
         uint256 betAmount,
         bytes32 preliminaryId,
-        bytes32 reveal
+        bytes32 seed,
+        uint256 payoutAmount
     ) internal returns (uint256 gameId) {
-        bytes32 commitment = _createCommitment(reveal);
+        bytes32 commitment = _createCommitment(seed, payoutAmount);
         
         vm.prank(_player);
         gameId = game.createGame{value: betAmount}(preliminaryId, commitment);
@@ -76,8 +76,9 @@ contract MultiplierGameTest is Test {
 
     function test_CreateGame_Success() public {
         bytes32 preliminaryId = bytes32("game-123");
-        bytes32 reveal = _createReveal("secret-seed");
-        bytes32 commitment = _createCommitment(reveal);
+        bytes32 seed = keccak256("secret-seed");
+        uint256 payoutAmount = 1 ether;
+        bytes32 commitment = _createCommitment(seed, payoutAmount);
         uint256 betAmount = 0.5 ether;
 
         vm.expectEmit(true, true, true, true);
@@ -102,8 +103,8 @@ contract MultiplierGameTest is Test {
         uint256 maxBet = game.getMaxBet();
         uint256 excessiveBet = maxBet + 1;
 
-        bytes32 reveal = _createReveal("seed");
-        bytes32 commitment = _createCommitment(reveal);
+        bytes32 seed = keccak256("seed");
+        bytes32 commitment = _createCommitment(seed, 1 ether);
 
         vm.prank(player);
         vm.expectRevert(
@@ -117,8 +118,8 @@ contract MultiplierGameTest is Test {
     }
 
     function test_CreateGame_ZeroBet_Reverts() public {
-        bytes32 reveal = _createReveal("seed");
-        bytes32 commitment = _createCommitment(reveal);
+        bytes32 seed = keccak256("seed");
+        bytes32 commitment = _createCommitment(seed, 1 ether);
 
         vm.prank(player);
         vm.expectRevert(MultiplierGame.ZeroBet.selector);
@@ -126,8 +127,8 @@ contract MultiplierGameTest is Test {
     }
 
     function test_CreateGame_IncrementGameId() public {
-        bytes32 reveal = _createReveal("seed");
-        bytes32 commitment = _createCommitment(reveal);
+        bytes32 seed = keccak256("seed");
+        bytes32 commitment = _createCommitment(seed, 1 ether);
 
         vm.startPrank(player);
         
@@ -145,20 +146,19 @@ contract MultiplierGameTest is Test {
     // ============ cashOut Tests ============
 
     function test_CashOut_ValidReveal_Success() public {
-        bytes32 reveal = _createReveal("my-secret-seed");
+        bytes32 seed = keccak256("my-secret-seed");
         uint256 betAmount = 0.5 ether;
+        uint256 payoutAmount = 1 ether; // 2x multiplier
         
-        uint256 gameId = _createGame(player, betAmount, bytes32("game-1"), reveal);
+        uint256 gameId = _createGameWithPayout(player, betAmount, bytes32("game-1"), seed, payoutAmount);
 
-        // Payout is bet * 2 = 1 ether (within 5% max payout limit)
-        uint256 payoutAmount = 1 ether;
         uint256 houseFee = (payoutAmount * 500) / 10000; // 5% = 0.05 ether
         uint256 expectedPlayerPayout = payoutAmount - houseFee;
 
         uint256 playerBalanceBefore = player.balance;
 
         vm.prank(player);
-        game.cashOut(gameId, payoutAmount, reveal);
+        game.cashOut(gameId, payoutAmount, seed);
 
         MultiplierGame.Game memory gameData = game.getGame(gameId);
         assertEq(uint8(gameData.status), uint8(MultiplierGame.Status.CASHED_OUT));
@@ -170,14 +170,16 @@ contract MultiplierGameTest is Test {
         assertEq(game.ownerFees(), houseFee);
     }
 
-    function test_CashOut_InvalidReveal_Reverts() public {
-        bytes32 correctReveal = _createReveal("correct-seed");
-        bytes32 wrongReveal = _createReveal("wrong-seed");
+    function test_CashOut_WrongPayoutAmount_Reverts() public {
+        bytes32 seed = keccak256("my-secret-seed");
+        uint256 committedPayout = 1 ether;
+        uint256 claimedPayout = 2 ether; // Trying to claim more than committed
         
-        uint256 gameId = _createGame(player, 0.5 ether, bytes32("game-1"), correctReveal);
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("game-1"), seed, committedPayout);
 
-        bytes32 wrongCommitment = keccak256(abi.encodePacked(wrongReveal));
-        bytes32 expectedCommitment = keccak256(abi.encodePacked(correctReveal));
+        // The hash won't match because payout is different
+        bytes32 wrongCommitment = keccak256(abi.encodePacked(seed, claimedPayout));
+        bytes32 expectedCommitment = keccak256(abi.encodePacked(seed, committedPayout));
 
         vm.prank(player);
         vm.expectRevert(
@@ -187,15 +189,41 @@ contract MultiplierGameTest is Test {
                 expectedCommitment
             )
         );
-        game.cashOut(gameId, 1 ether, wrongReveal);
+        game.cashOut(gameId, claimedPayout, seed);
+    }
+
+    function test_CashOut_WrongSeed_Reverts() public {
+        bytes32 correctSeed = keccak256("correct-seed");
+        bytes32 wrongSeed = keccak256("wrong-seed");
+        uint256 payoutAmount = 1 ether;
+        
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("game-1"), correctSeed, payoutAmount);
+
+        bytes32 wrongCommitment = keccak256(abi.encodePacked(wrongSeed, payoutAmount));
+        bytes32 expectedCommitment = keccak256(abi.encodePacked(correctSeed, payoutAmount));
+
+        vm.prank(player);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                MultiplierGame.InvalidReveal.selector,
+                wrongCommitment,
+                expectedCommitment
+            )
+        );
+        game.cashOut(gameId, payoutAmount, wrongSeed);
     }
 
     function test_CashOut_ExceedsMaxPayout_Reverts() public {
-        bytes32 reveal = _createReveal("seed");
-        uint256 gameId = _createGame(player, 0.5 ether, bytes32("game-1"), reveal);
+        bytes32 seed = keccak256("seed");
+        // Use a payout that will definitely exceed max even after bet is added to pot
+        // Max payout is 5% of pot. With 100 ether pot + 0.5 ether bet = 100.5 ether
+        // Max payout = 5.025 ether, so use 6 ether to be safe
+        uint256 excessivePayout = 6 ether;
+        
+        // Backend commits to an excessive payout (mistake or attack)
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("game-1"), seed, excessivePayout);
 
-        uint256 maxPayout = game.getMaxPayout();
-        uint256 excessivePayout = maxPayout + 1;
+        uint256 maxPayout = game.getMaxPayout(); // Get max payout AFTER game creation
 
         vm.prank(player);
         vm.expectRevert(
@@ -205,12 +233,14 @@ contract MultiplierGameTest is Test {
                 maxPayout
             )
         );
-        game.cashOut(gameId, excessivePayout, reveal);
+        game.cashOut(gameId, excessivePayout, seed);
     }
 
     function test_CashOut_NotPlayer_Reverts() public {
-        bytes32 reveal = _createReveal("seed");
-        uint256 gameId = _createGame(player, 0.5 ether, bytes32("game-1"), reveal);
+        bytes32 seed = keccak256("seed");
+        uint256 payoutAmount = 1 ether;
+        
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("game-1"), seed, payoutAmount);
 
         vm.prank(unauthorized);
         vm.expectRevert(
@@ -220,15 +250,17 @@ contract MultiplierGameTest is Test {
                 player
             )
         );
-        game.cashOut(gameId, 1 ether, reveal);
+        game.cashOut(gameId, payoutAmount, seed);
     }
 
     function test_CashOut_AlreadyCashedOut_Reverts() public {
-        bytes32 reveal = _createReveal("seed");
-        uint256 gameId = _createGame(player, 0.5 ether, bytes32("game-1"), reveal);
+        bytes32 seed = keccak256("seed");
+        uint256 payoutAmount = 1 ether;
+        
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("game-1"), seed, payoutAmount);
 
         vm.startPrank(player);
-        game.cashOut(gameId, 1 ether, reveal);
+        game.cashOut(gameId, payoutAmount, seed);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -237,13 +269,15 @@ contract MultiplierGameTest is Test {
                 MultiplierGame.Status.CASHED_OUT
             )
         );
-        game.cashOut(gameId, 1 ether, reveal);
+        game.cashOut(gameId, payoutAmount, seed);
         vm.stopPrank();
     }
 
     function test_CashOut_GameMarkedLost_Reverts() public {
-        bytes32 reveal = _createReveal("seed");
-        uint256 gameId = _createGame(player, 0.5 ether, bytes32("game-1"), reveal);
+        bytes32 seed = keccak256("seed");
+        uint256 payoutAmount = 1 ether;
+        
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("game-1"), seed, payoutAmount);
 
         // Backend marks game as lost
         vm.prank(backend);
@@ -257,14 +291,14 @@ contract MultiplierGameTest is Test {
                 MultiplierGame.Status.LOST
             )
         );
-        game.cashOut(gameId, 1 ether, reveal);
+        game.cashOut(gameId, payoutAmount, seed);
     }
 
     // ============ markGameAsLost Tests ============
 
     function test_MarkGameAsLost_Backend_Success() public {
-        bytes32 reveal = _createReveal("seed");
-        uint256 gameId = _createGame(player, 0.5 ether, bytes32("game-1"), reveal);
+        bytes32 seed = keccak256("seed");
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("game-1"), seed, 1 ether);
 
         vm.expectEmit(true, true, true, true);
         emit GameStatusUpdated(gameId, MultiplierGame.Status.LOST);
@@ -277,8 +311,8 @@ contract MultiplierGameTest is Test {
     }
 
     function test_MarkGameAsLost_Unauthorized_Reverts() public {
-        bytes32 reveal = _createReveal("seed");
-        uint256 gameId = _createGame(player, 0.5 ether, bytes32("game-1"), reveal);
+        bytes32 seed = keccak256("seed");
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("game-1"), seed, 1 ether);
 
         vm.prank(unauthorized);
         vm.expectRevert(
@@ -291,12 +325,13 @@ contract MultiplierGameTest is Test {
     }
 
     function test_MarkGameAsLost_AlreadyCashedOut_Reverts() public {
-        bytes32 reveal = _createReveal("seed");
-        uint256 gameId = _createGame(player, 0.5 ether, bytes32("game-1"), reveal);
+        bytes32 seed = keccak256("seed");
+        uint256 payoutAmount = 1 ether;
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("game-1"), seed, payoutAmount);
 
         // Player cashes out
         vm.prank(player);
-        game.cashOut(gameId, 1 ether, reveal);
+        game.cashOut(gameId, payoutAmount, seed);
 
         vm.prank(backend);
         vm.expectRevert(
@@ -314,8 +349,8 @@ contract MultiplierGameTest is Test {
     function test_Pause_BlocksGameCreation() public {
         game.pause();
 
-        bytes32 reveal = _createReveal("seed");
-        bytes32 commitment = _createCommitment(reveal);
+        bytes32 seed = keccak256("seed");
+        bytes32 commitment = _createCommitment(seed, 1 ether);
 
         vm.prank(player);
         vm.expectRevert(abi.encodeWithSignature("EnforcedPause()"));
@@ -326,8 +361,8 @@ contract MultiplierGameTest is Test {
         game.pause();
         game.unpause();
 
-        bytes32 reveal = _createReveal("seed");
-        bytes32 commitment = _createCommitment(reveal);
+        bytes32 seed = keccak256("seed");
+        bytes32 commitment = _createCommitment(seed, 1 ether);
 
         vm.prank(player);
         uint256 gameId = game.createGame{value: 0.5 ether}(bytes32("id"), commitment);
@@ -370,11 +405,12 @@ contract MultiplierGameTest is Test {
 
     function test_WithdrawFees_Success() public {
         // Create and cash out a game to accumulate fees
-        bytes32 reveal = _createReveal("seed");
-        uint256 gameId = _createGame(player, 0.5 ether, bytes32("game-1"), reveal);
+        bytes32 seed = keccak256("seed");
+        uint256 payoutAmount = 2 ether;
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("game-1"), seed, payoutAmount);
 
         vm.prank(player);
-        game.cashOut(gameId, 2 ether, reveal);
+        game.cashOut(gameId, payoutAmount, seed);
 
         uint256 accumulatedFees = game.ownerFees();
         assertTrue(accumulatedFees > 0);
@@ -433,8 +469,8 @@ contract MultiplierGameTest is Test {
 
         vm.deal(player, betAmount);
 
-        bytes32 reveal = _createReveal("fuzz-seed");
-        bytes32 commitment = _createCommitment(reveal);
+        bytes32 seed = keccak256("fuzz-seed");
+        bytes32 commitment = _createCommitment(seed, 1 ether);
 
         vm.prank(player);
         uint256 gameId = game.createGame{value: betAmount}(bytes32("fuzz-game"), commitment);
@@ -445,11 +481,11 @@ contract MultiplierGameTest is Test {
     }
 
     function testFuzz_CashOut_PayoutCalculation(uint256 payoutAmount) public {
-        bytes32 reveal = _createReveal("fuzz-seed");
-        uint256 gameId = _createGame(player, 0.5 ether, bytes32("fuzz-game"), reveal);
-
         uint256 maxPayout = game.getMaxPayout();
         payoutAmount = bound(payoutAmount, 1, maxPayout);
+
+        bytes32 seed = keccak256("fuzz-seed");
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("fuzz-game"), seed, payoutAmount);
 
         uint256 expectedHouseFee = (payoutAmount * 500) / 10000;
         uint256 expectedPlayerPayout = payoutAmount - expectedHouseFee;
@@ -458,10 +494,27 @@ contract MultiplierGameTest is Test {
         uint256 feesBefore = game.ownerFees();
 
         vm.prank(player);
-        game.cashOut(gameId, payoutAmount, reveal);
+        game.cashOut(gameId, payoutAmount, seed);
 
         assertEq(player.balance - playerBalanceBefore, expectedPlayerPayout);
         assertEq(game.ownerFees() - feesBefore, expectedHouseFee);
+    }
+
+    /// @notice Test that player cannot claim a different payout than committed
+    function testFuzz_CashOut_CannotClaimDifferentPayout(uint256 committedPayout, uint256 claimedPayout) public {
+        uint256 maxPayout = game.getMaxPayout();
+        committedPayout = bound(committedPayout, 1, maxPayout);
+        claimedPayout = bound(claimedPayout, 1, maxPayout);
+        
+        // Skip if they happen to be equal
+        vm.assume(committedPayout != claimedPayout);
+
+        bytes32 seed = keccak256("fuzz-seed");
+        uint256 gameId = _createGameWithPayout(player, 0.5 ether, bytes32("fuzz-game"), seed, committedPayout);
+
+        vm.prank(player);
+        vm.expectRevert(); // Will revert with InvalidReveal
+        game.cashOut(gameId, claimedPayout, seed);
     }
 }
 
@@ -470,24 +523,26 @@ contract MultiplierGameTest is Test {
 contract ReentrancyAttacker {
     MultiplierGame public target;
     uint256 public attackGameId;
-    bytes32 public attackReveal;
+    bytes32 public attackSeed;
+    uint256 public attackPayout;
     uint256 public attackCount;
 
     constructor(address _target) {
         target = MultiplierGame(payable(_target));
     }
 
-    function attack(uint256 gameId, bytes32 reveal) external {
+    function attack(uint256 gameId, uint256 payoutAmount, bytes32 seed) external {
         attackGameId = gameId;
-        attackReveal = reveal;
+        attackSeed = seed;
+        attackPayout = payoutAmount;
         attackCount = 0;
-        target.cashOut(gameId, 1 ether, reveal);
+        target.cashOut(gameId, payoutAmount, seed);
     }
 
     receive() external payable {
         if (attackCount < 3) {
             attackCount++;
-            try target.cashOut(attackGameId, 1 ether, attackReveal) {
+            try target.cashOut(attackGameId, attackPayout, attackSeed) {
                 // If this succeeds, reentrancy guard failed
             } catch {
                 // Expected: reentrancy should be blocked
@@ -510,22 +565,19 @@ contract ReentrancyGuardTest is Test {
 
     function test_ReentrancyGuard() public {
         // Create a game with attacker as player
-        bytes32 reveal = keccak256(abi.encodePacked("attacker-seed"));
-        bytes32 commitment = keccak256(abi.encodePacked(reveal));
+        bytes32 seed = keccak256("attacker-seed");
+        uint256 payoutAmount = 1 ether;
+        bytes32 commitment = keccak256(abi.encodePacked(seed, payoutAmount));
 
         vm.prank(address(attacker));
         uint256 gameId = game.createGame{value: 0.5 ether}(bytes32("attack-game"), commitment);
 
         // Attempt reentrancy attack
         vm.prank(address(attacker));
-        attacker.attack(gameId, reveal);
+        attacker.attack(gameId, payoutAmount, seed);
 
         // Verify game was only cashed out once
         MultiplierGame.Game memory gameData = game.getGame(gameId);
         assertEq(uint8(gameData.status), uint8(MultiplierGame.Status.CASHED_OUT));
-
-        // Attack count should be 0 or caught by revert
-        // The game status prevents re-cashout even if reentrancy was possible
     }
 }
-

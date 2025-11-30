@@ -173,15 +173,16 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
     }
 
     /**
-     * @notice Cash out a game by providing the reveal and payout amount
+     * @notice Cash out a game by providing the reveal
+     * @dev The payout amount is encoded in the reveal and verified against the commitment
      * @param gameId The on-chain game ID
-     * @param payoutAmount The amount to pay out (calculated off-chain)
-     * @param reveal The reveal data that hashes to the commitment
+     * @param payoutAmount The amount to pay out (must match the committed amount)
+     * @param seed The random seed used for game generation
      */
     function cashOut(
         uint256 gameId,
         uint256 payoutAmount,
-        bytes32 reveal
+        bytes32 seed
     ) external nonReentrant {
         Game storage game = games[gameId];
 
@@ -196,7 +197,9 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
         }
 
         // Verify the reveal matches the commitment
-        bytes32 computedHash = keccak256(abi.encodePacked(reveal));
+        // commitment = keccak256(abi.encodePacked(seed, payoutAmount))
+        // This ensures the payout was fixed BEFORE the game started
+        bytes32 computedHash = keccak256(abi.encodePacked(seed, payoutAmount));
         if (computedHash != game.commitmentHash) {
             revert InvalidReveal(computedHash, game.commitmentHash);
         }
