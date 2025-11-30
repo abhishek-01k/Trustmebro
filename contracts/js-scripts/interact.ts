@@ -87,7 +87,7 @@ async function main() {
 
   console.log(`Seed: ${seed}`);
   console.log(`Bet Amount: ${formatEther(betAmount)} ETH`);
-  console.log(`Payout Amount: ${formatEther(payoutAmount)} ETH`);
+  // console.log(`Payout Amount: ${formatEther(payoutAmount)} ETH`);
   console.log(`Commitment Hash: ${commitmentHash}\n`);
 
   const { gameId, txHash } = await playerClient.createGame(
