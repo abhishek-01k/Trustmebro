@@ -11,10 +11,12 @@ import {
   BottomNavigation,
   HeaderSection,
 } from "../components/layout";
+import { useGlobalContext } from "../context/global-context";
 
 export default function Home() {
   const { ready, authenticated, login } = usePrivy();
   const { initLoginToMiniApp, loginToMiniApp } = useLoginToMiniApp();
+  const { gameStarted } = useGlobalContext();
 
   const handleMiniAppLogin = useCallback(async () => {
     if (ready && !authenticated) {
@@ -50,9 +52,9 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* <HeaderSection /> */}
+      {!gameStarted && <HeaderSection />}
       <BodySection />
-      {/* <BottomNavigation /> */}
+      {!gameStarted && <BottomNavigation />}
     </div>
   );
 }
