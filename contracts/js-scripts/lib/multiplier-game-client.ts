@@ -103,17 +103,20 @@ export class MultiplierGameClient {
   async cashOut(
     gameId: bigint,
     payoutAmount: bigint,
-    seed: Hash
+    seed: string | `0x${string}`
   ): Promise<Hash> {
     if (!this.walletClient) {
       throw new Error("Wallet client not initialized. Provide an account in constructor.");
     }
 
+    // Ensure seed is properly formatted as bytes32 (0x prefix + 64 hex chars)
+    const formattedSeed = seed.startsWith('0x') ? seed as `0x${string}` : `0x${seed}` as `0x${string}`;
+
     const hash = await this.walletClient.writeContract({
       address: this.contractAddress,
       abi: this.abi,
       functionName: "cashOut",
-      args: [gameId, payoutAmount, seed],
+      args: [gameId, payoutAmount, formattedSeed],
       chain: anvil,
     });
 
@@ -124,7 +127,7 @@ export class MultiplierGameClient {
   /**
    * Mark a game as lost (backend only)
    */
-  async markGameAsLost(gameId: bigint): Promise<Hash> {
+  async markGameAsLost(gameId: bigint, seed: `0x${string}`): Promise<Hash> {
     if (!this.walletClient) {
       throw new Error("Wallet client not initialized. Provide an account in constructor.");
     }
@@ -133,7 +136,7 @@ export class MultiplierGameClient {
       address: this.contractAddress,
       abi: this.abi,
       functionName: "markGameAsLost",
-      args: [gameId],
+      args: [gameId, seed],
       chain: anvil,
     });
 

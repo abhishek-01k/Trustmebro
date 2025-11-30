@@ -1,6 +1,7 @@
 import { privateKeyToAccount } from "viem/accounts";
 import { keccak256, encodePacked, toBytes } from "viem";
 import { MultiplierGameClient, GameStatus } from "./lib/multiplier-game-client";
+import { createCommitmentHash, generateAllDeathCups, generateGameSeed, getGameData } from "./utils/verifiable-utils";
 
 // Anvil default private keys
 const PLAYER_PRIVATE_KEY =
@@ -79,20 +80,50 @@ async function main() {
 
   // Generate seed and calculate payout
   // Use bet amount within max bet limit (1% of pot)
-  const seed = keccak256(toBytes(`game-seed-${Date.now()}`));
   const betAmount = BigInt("5000000000000000"); // 0.005 ETH (within 0.01 ETH max)
   const payoutAmount = BigInt("10000000000000000"); // 0.01 ETH (2x multiplier, within 0.05 ETH max)
-  const commitmentHash = MultiplierGameClient.createCommitment(seed, payoutAmount);
-  const preliminaryId = keccak256(toBytes("preliminary-game-1"));
-
+  // const commitmentHash = MultiplierGameClient.createCommitment(seed, payoutAmount);
+  
+  const preliminaryId = keccak256(toBytes(`game-id-${Date.now()}`)); //Backend game id
+  const seed = generateGameSeed()
   console.log(`Seed: ${seed}`);
+
+  // Step 2: Define row configurations (example game)
+  console.log('\n📋 Step 2: Defining Row Configurations...');
+  const rowConfigs = [
+    { tiles: 5 },  // Row 0: 5 cups
+    { tiles: 4 },  // Row 1: 4 cups
+    { tiles: 3 },  // Row 2: 3 cups
+    { tiles: 2 },  // Row 3: 2 cups
+  ];
+  console.log('   Row Configurations:');
+  rowConfigs.forEach((config, index) => {
+    console.log(`     Row ${index}: ${config.tiles} cups`);
+  });
+  
+  // Step 3: Generate death cup positions (but don't reveal yet)
+  console.log('\n🎲 Step 3: Generating Death Cup Positions (Hidden)...');
+  const deathCups = generateAllDeathCups(seed, rowConfigs);
+  console.log('   Death cups generated (not revealed to player yet)', deathCups);
+  
+  // Step 4: Create commitment hash
+  console.log('\n🔒 Step 4: Creating Commitment Hash...');
+  const version = 'v1';
+  const commitmentHash = createCommitmentHash(version, deathCups, seed);
+  console.log(`   Version: ${version}`);
+  console.log(`   Commitment Hash: ${commitmentHash}`);
+  console.log('   ✅ This hash is stored on-chain and cannot be changed!');
+
+  const gameData = getGameData(version, deathCups, seed);
+  console.log('   Game Data: ', gameData);
+  
+  
   console.log(`Bet Amount: ${formatEther(betAmount)} ETH`);
-  // console.log(`Payout Amount: ${formatEther(payoutAmount)} ETH`);
-  console.log(`Commitment Hash: ${commitmentHash}\n`);
+  // console.log(`Commitment Hash: ${commitmentHash}\n`);
 
   const { gameId, txHash } = await playerClient.createGame(
     preliminaryId,
-    commitmentHash,
+    commitmentHash as `0x${string}`,
     betAmount
   );
 
@@ -118,13 +149,13 @@ async function main() {
   console.log("⏳ Simulating gameplay (off-chain)...\n");
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  // 6. Cash out (player)
-  console.log("💰 Cashing Out (Player)");
+  // 6. Cash out (backend)
+  console.log("💰 Cashing Out (Backend)");
   console.log("-".repeat(50));
   const playerBalanceBefore = await playerClient.getPotBalance();
   console.log(`Pot balance before: ${formatEther(playerBalanceBefore)} ETH`);
 
-  const cashOutTx = await playerClient.cashOut(gameId, payoutAmount, seed);
+  const cashOutTx = await backendClient.cashOut(gameId, payoutAmount, seed);
   console.log(`✓ Cash out transaction: ${cashOutTx}`);
 
   const gameAfterCashOut = await playerClient.getGame(gameId);
@@ -155,7 +186,7 @@ async function main() {
   // 8. Mark game as lost (backend)
   console.log("❌ Marking Game as Lost (Backend)");
   console.log("-".repeat(50));
-  const markLostTx = await backendClient.markGameAsLost(gameId2);
+  const markLostTx = await backendClient.markGameAsLost(gameId2, seed2);
   console.log(`✓ Mark lost transaction: ${markLostTx}`);
 
   const game2AfterLost = await playerClient.getGame(gameId2);

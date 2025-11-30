@@ -28,6 +28,7 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
         Status status;
         bytes32 preliminaryGameId;
         uint256 createdAt;
+        bytes32 seed;
     }
 
     // ============ Constants ============
@@ -160,7 +161,8 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
             commitmentHash: commitmentHash,
             status: Status.CREATED,
             preliminaryGameId: preliminaryId,
-            createdAt: block.timestamp
+            createdAt: block.timestamp,
+            seed: bytes32(0)
         });
 
         emit GameCreated(
@@ -183,37 +185,12 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
         uint256 gameId,
         uint256 payoutAmount,
         bytes32 seed
-    ) external nonReentrant {
+    ) external nonReentrant onlyBackend {
         Game storage game = games[gameId];
-
-        // Verify caller is the player
-        if (msg.sender != game.player) {
-            revert NotGamePlayer(msg.sender, game.player);
-        }
 
         // Verify game is in CREATED status
         if (game.status != Status.CREATED) {
             revert GameNotInCreatedStatus(gameId, game.status);
-        }
-
-        // Verify the reveal matches the commitment
-        // commitment = keccak256(abi.encodePacked(seed, payoutAmount))
-        // This ensures the payout was fixed BEFORE the game started
-        bytes32 computedHash = keccak256(abi.encodePacked(seed, payoutAmount));
-        if (computedHash != game.commitmentHash) {
-            revert InvalidReveal(computedHash, game.commitmentHash);
-        }
-
-        // Check payout limits
-        uint256 maxPayout = getMaxPayout();
-        if (payoutAmount > maxPayout) {
-            revert PayoutExceedsMaxPayout(payoutAmount, maxPayout);
-        }
-
-        // Check pot solvency
-        uint256 pot = getPotBalance();
-        if (payoutAmount > pot) {
-            revert InsufficientPot(payoutAmount, pot);
         }
 
         // Calculate house fee
@@ -222,6 +199,7 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
 
         // Update state before transfer
         game.status = Status.CASHED_OUT;
+        game.seed = seed;
         ownerFees += houseFee;
 
         // Transfer payout to player
@@ -248,8 +226,9 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
     /**
      * @notice Mark a game as lost (player hit death cup or abandoned)
      * @param gameId The on-chain game ID
+     * @param seed The random seed used for game generation
      */
-    function markGameAsLost(uint256 gameId) external onlyBackend {
+    function markGameAsLost(uint256 gameId, bytes32 seed) external onlyBackend {
         Game storage game = games[gameId];
 
         // Verify game is in CREATED status
@@ -258,6 +237,7 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
         }
 
         game.status = Status.LOST;
+        game.seed = seed;
 
         emit GameStatusUpdated(gameId, Status.LOST);
     }

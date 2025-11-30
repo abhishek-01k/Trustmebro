@@ -162,6 +162,7 @@ contract MultiplierGameTest is Test {
 
         MultiplierGame.Game memory gameData = game.getGame(gameId);
         assertEq(uint8(gameData.status), uint8(MultiplierGame.Status.CASHED_OUT));
+        assertEq(gameData.seed, seed);
 
         uint256 playerBalanceAfter = player.balance;
         assertEq(playerBalanceAfter - playerBalanceBefore, expectedPlayerPayout);
@@ -281,7 +282,7 @@ contract MultiplierGameTest is Test {
 
         // Backend marks game as lost
         vm.prank(backend);
-        game.markGameAsLost(gameId);
+        game.markGameAsLost(gameId, seed);
 
         vm.prank(player);
         vm.expectRevert(
@@ -304,10 +305,11 @@ contract MultiplierGameTest is Test {
         emit GameStatusUpdated(gameId, MultiplierGame.Status.LOST);
 
         vm.prank(backend);
-        game.markGameAsLost(gameId);
+        game.markGameAsLost(gameId, seed);
 
         MultiplierGame.Game memory gameData = game.getGame(gameId);
         assertEq(uint8(gameData.status), uint8(MultiplierGame.Status.LOST));
+        assertEq(gameData.seed, seed);
     }
 
     function test_MarkGameAsLost_Unauthorized_Reverts() public {
@@ -321,7 +323,7 @@ contract MultiplierGameTest is Test {
                 unauthorized
             )
         );
-        game.markGameAsLost(gameId);
+        game.markGameAsLost(gameId, seed);
     }
 
     function test_MarkGameAsLost_AlreadyCashedOut_Reverts() public {
@@ -341,7 +343,7 @@ contract MultiplierGameTest is Test {
                 MultiplierGame.Status.CASHED_OUT
             )
         );
-        game.markGameAsLost(gameId);
+        game.markGameAsLost(gameId, seed);
     }
 
     // ============ Pause Tests ============
