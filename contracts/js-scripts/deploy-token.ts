@@ -1,14 +1,32 @@
-import { createWalletClient, createPublicClient, http, type Address, formatEther, parseEther } from "viem";
+import { createWalletClient, createPublicClient, http, type Address, formatEther, parseEther, type Chain } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { anvil } from "viem/chains";
+import { anvil, baseSepolia } from "viem/chains";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 import { join } from "path";
 
-const ANVIL_RPC_URL = "http://localhost:8545";
-const ANVIL_PRIVATE_KEY =
-  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // Anvil account #0
-const PLAYER_PRIVATE_KEY =
-  "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"; // Anvil account #1
+// Network configuration
+const NETWORK = (process.env.NETWORK || "anvil").toLowerCase();
+const RPC_URL = process.env.RPC_URL || (NETWORK === "anvil" ? "http://localhost:8545" : undefined);
+const PRIVATE_KEY = process.env.PRIVATE_KEY || (NETWORK === "anvil" 
+  ? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" // Anvil account #0
+  : undefined);
+const PLAYER_PRIVATE_KEY = process.env.PLAYER_PRIVATE_KEY || (NETWORK === "anvil"
+  ? "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" // Anvil account #1
+  : undefined);
+
+// Get chain configuration
+function getChain(): Chain {
+  switch (NETWORK) {
+    case "base-sepolia":
+    case "basesepolia":
+      return baseSepolia;
+    case "anvil":
+    default:
+      return anvil;
+  }
+}
+
+const chain = getChain();
 
 const TOKEN_JSON_PATH = join(__dirname, "../out/ERC20Mock.sol/ERC20Mock.json");
 const DEPLOYED_TOKEN_FILE = join(__dirname, "../.deployed-token.json");
@@ -115,32 +133,53 @@ export function loadDeployedToken(): DeployedToken | null {
 }
 
 async function main() {
-  console.log("🚀 Deploying ERC20Mock token to Anvil...\n");
+  console.log(`🚀 Deploying ERC20Mock token to ${chain.name}...\n`);
 
-  // Check if Anvil is running
+  // Validate configuration
+  if (!PRIVATE_KEY) {
+    console.error("❌ PRIVATE_KEY environment variable is required");
+    console.error("   Please set PRIVATE_KEY to your deployer wallet private key");
+    console.error("   Example: PRIVATE_KEY=0x... NETWORK=base-sepolia pnpm scripts:deploy-token");
+    process.exit(1);
+  }
+
+  if (!RPC_URL) {
+    console.error("❌ RPC_URL environment variable is required for this network");
+    console.error(`   Please set RPC_URL to a ${chain.name} RPC endpoint`);
+    console.error("   Example: RPC_URL=https://... NETWORK=base-sepolia pnpm scripts:deploy-token");
+    process.exit(1);
+  }
+
+  // Connect to network
   try {
     const publicClient = createPublicClient({
-      chain: anvil,
-      transport: http(ANVIL_RPC_URL),
+      chain,
+      transport: http(RPC_URL),
     });
-    await publicClient.getBlockNumber();
-    console.log("✓ Connected to Anvil at", ANVIL_RPC_URL);
+    const blockNumber = await publicClient.getBlockNumber();
+    console.log(`✓ Connected to ${chain.name} at ${RPC_URL}`);
+    console.log(`✓ Current block: ${blockNumber}\n`);
   } catch (error) {
-    console.error("❌ Failed to connect to Anvil. Make sure it's running:");
-    console.error("   pnpm contracts:anvil");
+    console.error(`❌ Failed to connect to ${chain.name}:`);
+    if (NETWORK === "anvil") {
+      console.error("   Make sure Anvil is running: pnpm contracts:anvil");
+    } else {
+      console.error("   Check your RPC_URL and network configuration");
+    }
+    console.error(`   Error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
 
   // Create account and clients
-  const account = privateKeyToAccount(ANVIL_PRIVATE_KEY as `0x${string}`);
+  const account = privateKeyToAccount(PRIVATE_KEY as `0x${string}`);
   const publicClient = createPublicClient({
-    chain: anvil,
-    transport: http(ANVIL_RPC_URL),
+    chain,
+    transport: http(RPC_URL),
   });
   const walletClient = createWalletClient({
     account,
-    chain: anvil,
-    transport: http(ANVIL_RPC_URL),
+    chain,
+    transport: http(RPC_URL),
   });
 
   console.log(`✓ Using deployer account: ${account.address}\n`);
@@ -154,7 +193,7 @@ async function main() {
     abi,
     bytecode: bytecode as `0x${string}`,
     account,
-    chain: anvil,
+    chain,
     args: [],
   });
 
@@ -172,7 +211,7 @@ async function main() {
   console.log(`\n✅ Token deployed at: ${tokenAddress}\n`);
 
   // Save deployment address
-  saveDeployedToken(tokenAddress, anvil.id);
+  saveDeployedToken(tokenAddress, chain.id);
 
   // Get token info
   const name = (await publicClient.readContract({
@@ -200,23 +239,28 @@ async function main() {
   })) as bigint;
 
   // Mint tokens to player and deployer (optional, can be customized via environment variable)
-  const playerAccount = privateKeyToAccount(PLAYER_PRIVATE_KEY as `0x${string}`);
   const mintAmount = process.env.MINT_AMOUNT 
     ? parseEther(process.env.MINT_AMOUNT)
     : parseEther("1000000"); // Default: 1M tokens
 
-  // Mint to player
-  console.log(`💰 Minting ${formatEther(mintAmount)} ${symbol} to player (${playerAccount.address})...`);
-  const playerMintHash = await walletClient.writeContract({
-    address: tokenAddress,
-    abi: ERC20_ABI,
-    functionName: "mint",
-    args: [playerAccount.address, mintAmount],
-    account,
-    chain: anvil,
-  });
-  await publicClient.waitForTransactionReceipt({ hash: playerMintHash });
-  console.log("✓ Tokens minted to player\n");
+  if (!PLAYER_PRIVATE_KEY) {
+    console.log("⚠️  PLAYER_PRIVATE_KEY not set, skipping player mint\n");
+  } else {
+    const playerAccount = privateKeyToAccount(PLAYER_PRIVATE_KEY as `0x${string}`);
+
+    // Mint to player
+    console.log(`💰 Minting ${formatEther(mintAmount)} ${symbol} to player (${playerAccount.address})...`);
+    const playerMintHash = await walletClient.writeContract({
+      address: tokenAddress,
+      abi: ERC20_ABI,
+      functionName: "mint",
+      args: [playerAccount.address, mintAmount],
+      account,
+      chain,
+    });
+    await publicClient.waitForTransactionReceipt({ hash: playerMintHash });
+    console.log("✓ Tokens minted to player\n");
+  }
 
   // Mint to deployer/owner (for refilling pot)
   // Small delay to ensure previous transaction is fully processed
@@ -228,25 +272,29 @@ async function main() {
     functionName: "mint",
     args: [account.address, mintAmount],
     account,
-    chain: anvil,
+    chain,
   });
   await publicClient.waitForTransactionReceipt({ hash: deployerMintHash });
   console.log("✓ Tokens minted to deployer/owner\n");
 
   // Get balances
-  const playerBalance = (await publicClient.readContract({
-    address: tokenAddress,
-    abi: ERC20_ABI,
-    functionName: "balanceOf",
-    args: [playerAccount.address],
-  })) as bigint;
-
   const deployerBalance = (await publicClient.readContract({
     address: tokenAddress,
     abi: ERC20_ABI,
     functionName: "balanceOf",
     args: [account.address],
   })) as bigint;
+
+  let playerBalance: bigint | undefined;
+  if (PLAYER_PRIVATE_KEY) {
+    const playerAccount = privateKeyToAccount(PLAYER_PRIVATE_KEY as `0x${string}`);
+    playerBalance = (await publicClient.readContract({
+      address: tokenAddress,
+      abi: ERC20_ABI,
+      functionName: "balanceOf",
+      args: [playerAccount.address],
+    })) as bigint;
+  }
 
   // Print summary
   console.log("=== Token Deployment Summary ===");
@@ -255,11 +303,19 @@ async function main() {
   console.log(`Symbol: ${symbol}`);
   console.log(`Decimals: ${decimals}`);
   console.log(`Total Supply: ${formatEther(totalSupply)} ${symbol}`);
-  console.log(`\nPlayer Address: ${playerAccount.address}`);
-  console.log(`Player Balance: ${formatEther(playerBalance)} ${symbol}`);
+  if (PLAYER_PRIVATE_KEY && playerBalance !== undefined) {
+    const playerAccount = privateKeyToAccount(PLAYER_PRIVATE_KEY as `0x${string}`);
+    console.log(`\nPlayer Address: ${playerAccount.address}`);
+    console.log(`Player Balance: ${formatEther(playerBalance)} ${symbol}`);
+  }
   console.log(`\nDeployer/Owner Address: ${account.address}`);
   console.log(`Deployer/Owner Balance: ${formatEther(deployerBalance)} ${symbol}`);
-  console.log(`Chain ID: ${anvil.id}`);
+  console.log(`Chain ID: ${chain.id}`);
+  console.log(`Network: ${chain.name}`);
+  console.log(`Explorer: ${chain.blockExplorers?.default?.url || "N/A"}`);
+  if (chain.blockExplorers?.default?.url) {
+    console.log(`Token on Explorer: ${chain.blockExplorers.default.url}/address/${tokenAddress}`);
+  }
   console.log("\n✅ Token deployment complete!");
   console.log(`\n💡 To use this token, set the TOKEN_ADDRESS environment variable:`);
   console.log(`   export TOKEN_ADDRESS=${tokenAddress}`);

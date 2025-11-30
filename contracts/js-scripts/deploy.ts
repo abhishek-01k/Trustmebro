@@ -1,15 +1,32 @@
-import { createWalletClient, createPublicClient, http, type Address } from "viem";
+import { createWalletClient, createPublicClient, http, type Address, type Chain } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { anvil } from "viem/chains";
+import { anvil, baseSepolia } from "viem/chains";
 import {
   loadContractABI,
   loadContractBytecode,
   saveDeployedAddress,
 } from "./utils/contract-utils";
 
-const ANVIL_RPC_URL = "http://localhost:8545";
-const ANVIL_PRIVATE_KEY =
-  "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // Anvil account #0
+// Network configuration
+const NETWORK = (process.env.NETWORK || "anvil").toLowerCase();
+const RPC_URL = process.env.RPC_URL || (NETWORK === "anvil" ? "http://localhost:8545" : undefined);
+const PRIVATE_KEY = process.env.PRIVATE_KEY || (NETWORK === "anvil" 
+  ? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80" // Anvil account #0
+  : undefined);
+
+// Get chain configuration
+function getChain(): Chain {
+  switch (NETWORK) {
+    case "base-sepolia":
+    case "basesepolia":
+      return baseSepolia;
+    case "anvil":
+    default:
+      return anvil;
+  }
+}
+
+const chain = getChain();
 
 // Standard ERC20 ABI for token operations
 const ERC20_ABI = [
@@ -33,41 +50,62 @@ const ERC20_ABI = [
 ] as const;
 
 async function main() {
-  console.log("🚀 Deploying MultiplierGame contract to Anvil...\n");
+  console.log(`🚀 Deploying MultiplierGame contract to ${chain.name}...\n`);
 
-  // Get token address from environment or use default
+  // Validate configuration
+  if (!PRIVATE_KEY) {
+    console.error("❌ PRIVATE_KEY environment variable is required");
+    console.error("   Please set PRIVATE_KEY to your deployer wallet private key");
+    console.error("   Example: PRIVATE_KEY=0x... NETWORK=base-sepolia pnpm scripts:deploy");
+    process.exit(1);
+  }
+
+  if (!RPC_URL) {
+    console.error("❌ RPC_URL environment variable is required for this network");
+    console.error(`   Please set RPC_URL to a ${chain.name} RPC endpoint`);
+    console.error("   Example: RPC_URL=https://... NETWORK=base-sepolia pnpm scripts:deploy");
+    process.exit(1);
+  }
+
+  // Get token address from environment
   const tokenAddress = (process.env.TOKEN_ADDRESS as Address) || undefined;
   if (!tokenAddress) {
     console.error("❌ TOKEN_ADDRESS environment variable is required");
     console.error("   Please set TOKEN_ADDRESS to an ERC20 token address");
-    console.error("   Example: TOKEN_ADDRESS=0x... pnpm contracts:deploy");
+    console.error("   Example: TOKEN_ADDRESS=0x... pnpm scripts:deploy");
     process.exit(1);
   }
 
-  // Check if Anvil is running
+  // Connect to network
   try {
     const publicClient = createPublicClient({
-      chain: anvil,
-      transport: http(ANVIL_RPC_URL),
+      chain,
+      transport: http(RPC_URL),
     });
-    await publicClient.getBlockNumber();
-    console.log("✓ Connected to Anvil at", ANVIL_RPC_URL);
+    const blockNumber = await publicClient.getBlockNumber();
+    console.log(`✓ Connected to ${chain.name} at ${RPC_URL}`);
+    console.log(`✓ Current block: ${blockNumber}\n`);
   } catch (error) {
-    console.error("❌ Failed to connect to Anvil. Make sure it's running:");
-    console.error("   pnpm contracts:anvil");
+    console.error(`❌ Failed to connect to ${chain.name}:`);
+    if (NETWORK === "anvil") {
+      console.error("   Make sure Anvil is running: pnpm contracts:anvil");
+    } else {
+      console.error("   Check your RPC_URL and network configuration");
+    }
+    console.error(`   Error: ${error instanceof Error ? error.message : String(error)}`);
     process.exit(1);
   }
 
   // Create account and clients
-  const account = privateKeyToAccount(ANVIL_PRIVATE_KEY as `0x${string}`);
+  const account = privateKeyToAccount(PRIVATE_KEY as `0x${string}`);
   const publicClient = createPublicClient({
-    chain: anvil,
-    transport: http(ANVIL_RPC_URL),
+    chain,
+    transport: http(RPC_URL),
   });
   const walletClient = createWalletClient({
     account,
-    chain: anvil,
-    transport: http(ANVIL_RPC_URL),
+    chain,
+    transport: http(RPC_URL),
   });
 
   console.log(`✓ Using deployer account: ${account.address}\n`);
@@ -84,7 +122,7 @@ async function main() {
     abi,
     bytecode: bytecode as `0x${string}`,
     account,
-    chain: anvil,
+    chain,
     args: [tokenAddress],
   });
 
@@ -102,7 +140,7 @@ async function main() {
   console.log(`\n✅ Contract deployed at: ${contractAddress}\n`);
 
   // Save deployment address
-  saveDeployedAddress(contractAddress, anvil.id);
+  saveDeployedAddress(contractAddress, chain.id);
 
   // Check deployer token balance
   const deployerBalance = (await publicClient.readContract({
@@ -126,7 +164,7 @@ async function main() {
       functionName: "approve",
       args: [contractAddress, refillAmount],
       account,
-      chain: anvil,
+      chain,
     });
     await publicClient.waitForTransactionReceipt({ hash: approveHash });
     console.log("✓ Token approval confirmed");
@@ -138,7 +176,7 @@ async function main() {
       functionName: "refillPot",
       args: [refillAmount],
       account,
-      chain: anvil,
+      chain,
     });
 
     await publicClient.waitForTransactionReceipt({ hash: fundHash });
@@ -188,7 +226,12 @@ async function main() {
   console.log(`Pot Balance: ${formatEther(potBalance)} tokens`);
   console.log(`Max Bet: ${formatEther(maxBet)} tokens`);
   console.log(`Max Payout: ${formatEther(maxPayout)} tokens`);
-  console.log(`Chain ID: ${anvil.id}`);
+  console.log(`Chain ID: ${chain.id}`);
+  console.log(`Network: ${chain.name}`);
+  console.log(`Explorer: ${chain.blockExplorers?.default?.url || "N/A"}`);
+  if (chain.blockExplorers?.default?.url) {
+    console.log(`Contract on Explorer: ${chain.blockExplorers.default.url}/address/${contractAddress}`);
+  }
   console.log("\n✅ Deployment complete!");
 }
 
