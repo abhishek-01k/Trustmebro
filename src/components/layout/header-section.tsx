@@ -1,21 +1,17 @@
 import React, { useMemo } from "react";
-import { useFundWallet, usePrivy, useWallets } from "@privy-io/react-auth";
+import { usePrivy } from "@privy-io/react-auth";
 import { useReadContract } from "wagmi";
 import { base } from "wagmi/chains";
 import { USDC_ADDRESS, USDC_DECIMALS, USDC_ABI } from "@/src/constants";
 import { formatUnits } from "viem";
-import { PlusIcon, Wallet } from "lucide-react";
-import { Button } from "../ui/button";
+import {  Wallet } from "lucide-react";
 
 const HeaderSection = () => {
-  const { fundWallet } = useFundWallet();
-  const { user,logout } = usePrivy();
-  const { wallets } = useWallets();
+  const { user } = usePrivy();
 
   console.log("User", user);
-  console.log("Wallets", wallets);
 
-  const walletAddress = wallets[0]?.address as `0x${string}` | undefined;
+  const walletAddress = user?.wallet?.address as `0x${string}` | undefined;
 
   const { data: balance, isLoading } = useReadContract({
     address: USDC_ADDRESS,
@@ -61,20 +57,6 @@ const HeaderSection = () => {
               </>
             )}
           </div>
-          <button
-            onClick={() => {
-              const address = user?.wallet?.address;
-              if (address) {
-                fundWallet({ address });
-              }
-            }}
-            disabled={!wallets[0]?.address}
-            className={`ml-2 p-1 rounded transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center bg-[#a9062c] border border-pink-500/40 ${
-              wallets[0]?.address ? "" : ""
-            }`}
-          >
-            <PlusIcon className="w-3.5 h-3.5 text-white" />
-          </button>
         </div>
       </div>
     </header>

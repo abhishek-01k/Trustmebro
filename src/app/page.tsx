@@ -6,7 +6,11 @@ import { useLoginToMiniApp } from "@privy-io/react-auth/farcaster";
 import { usePrivy } from "@privy-io/react-auth";
 import { Button } from "../components/ui/button";
 import LoadingScreen from "../components/loading-screen";
-import { BodySection, BottomNavigation, HeaderSection } from "../components/layout";
+import {
+  BodySection,
+  BottomNavigation,
+  HeaderSection,
+} from "../components/layout";
 
 export default function Home() {
   const { ready, authenticated, login } = usePrivy();
@@ -33,9 +37,7 @@ export default function Home() {
   }, [handleMiniAppLogin]);
 
   if (!ready) {
-    return (
-      <LoadingScreen/>
-    );
+    return <LoadingScreen />;
   }
 
   if (!authenticated) {
@@ -48,9 +50,9 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <HeaderSection/>
-        <BodySection/>
-        <BottomNavigation/>
+      {/* <HeaderSection /> */}
+      <BodySection />
+      {/* <BottomNavigation /> */}
     </div>
   );
 }
