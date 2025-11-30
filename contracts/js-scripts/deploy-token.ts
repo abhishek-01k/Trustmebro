@@ -1,4 +1,4 @@
-import { createWalletClient, createPublicClient, http, type Address, formatEther, parseEther, type Chain } from "viem";
+import { createWalletClient, createPublicClient, http, type Address, formatUnits, parseUnits, type Chain } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { anvil, baseSepolia } from "viem/chains";
 import { readFileSync, writeFileSync, existsSync } from "fs";
@@ -239,9 +239,10 @@ async function main() {
   })) as bigint;
 
   // Mint tokens to player and deployer (optional, can be customized via environment variable)
+  // Use parseUnits with actual token decimals instead of parseEther (which assumes 18 decimals)
   const mintAmount = process.env.MINT_AMOUNT 
-    ? parseEther(process.env.MINT_AMOUNT)
-    : parseEther("1000000"); // Default: 1M tokens
+    ? parseUnits(process.env.MINT_AMOUNT, decimals)
+    : parseUnits("1000000", decimals); // Default: 1M tokens
 
   if (!PLAYER_PRIVATE_KEY) {
     console.log("⚠️  PLAYER_PRIVATE_KEY not set, skipping player mint\n");
@@ -249,7 +250,7 @@ async function main() {
     const playerAccount = privateKeyToAccount(PLAYER_PRIVATE_KEY as `0x${string}`);
 
     // Mint to player
-    console.log(`💰 Minting ${formatEther(mintAmount)} ${symbol} to player (${playerAccount.address})...`);
+    console.log(`💰 Minting ${formatUnits(mintAmount, decimals)} ${symbol} to player (${playerAccount.address})...`);
     const playerMintHash = await walletClient.writeContract({
       address: tokenAddress,
       abi: ERC20_ABI,
@@ -265,7 +266,7 @@ async function main() {
   // Mint to deployer/owner (for refilling pot)
   // Small delay to ensure previous transaction is fully processed
   await new Promise((resolve) => setTimeout(resolve, 100));
-  console.log(`💰 Minting ${formatEther(mintAmount)} ${symbol} to deployer/owner (${account.address})...`);
+  console.log(`💰 Minting ${formatUnits(mintAmount, decimals)} ${symbol} to deployer/owner (${account.address})...`);
   const deployerMintHash = await walletClient.writeContract({
     address: tokenAddress,
     abi: ERC20_ABI,
@@ -302,14 +303,14 @@ async function main() {
   console.log(`Name: ${name}`);
   console.log(`Symbol: ${symbol}`);
   console.log(`Decimals: ${decimals}`);
-  console.log(`Total Supply: ${formatEther(totalSupply)} ${symbol}`);
+  console.log(`Total Supply: ${formatUnits(totalSupply, decimals)} ${symbol}`);
   if (PLAYER_PRIVATE_KEY && playerBalance !== undefined) {
     const playerAccount = privateKeyToAccount(PLAYER_PRIVATE_KEY as `0x${string}`);
     console.log(`\nPlayer Address: ${playerAccount.address}`);
-    console.log(`Player Balance: ${formatEther(playerBalance)} ${symbol}`);
+    console.log(`Player Balance: ${formatUnits(playerBalance, decimals)} ${symbol}`);
   }
   console.log(`\nDeployer/Owner Address: ${account.address}`);
-  console.log(`Deployer/Owner Balance: ${formatEther(deployerBalance)} ${symbol}`);
+  console.log(`Deployer/Owner Balance: ${formatUnits(deployerBalance, decimals)} ${symbol}`);
   console.log(`Chain ID: ${chain.id}`);
   console.log(`Network: ${chain.name}`);
   console.log(`Explorer: ${chain.blockExplorers?.default?.url || "N/A"}`);
