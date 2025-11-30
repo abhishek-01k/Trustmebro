@@ -76,13 +76,15 @@ async function main() {
   const playerTokenBalance = await playerClient.getTokenBalance(playerAccount.address);
   console.log(`Player Token Balance: ${formatEther(playerTokenBalance)} tokens\n`);
 
+  // Minimum bet amount constant
+  const minBet = parseEther("0.001");
+
   // Calculate appropriate bet amounts based on player balance and contract limits
   // Use 10% of player balance or max bet, whichever is smaller
   const betAmountFromBalance = playerTokenBalance / BigInt(10);
   const betAmount = betAmountFromBalance < maxBet ? betAmountFromBalance : maxBet;
   
   // Ensure bet amount is at least 0.001 tokens (for testing)
-  const minBet = parseEther("0.001");
   const finalBetAmount = betAmount < minBet ? minBet : betAmount;
   
   // Calculate payout (2x multiplier for example)
@@ -206,9 +208,35 @@ async function main() {
   // 7. Create another game to test mark as lost
   console.log("🎲 Creating Second Game (Player)");
   console.log("-".repeat(50));
+  
+  // Recalculate bet amounts based on current pot balance after first game
+  const potBalanceAfterFirstGame = await playerClient.getPotBalance();
+  const maxBetAfterFirstGame = await playerClient.getMaxBet();
+  const maxPayoutAfterFirstGame = await playerClient.getMaxPayout();
+  
+  console.log(`Current pot balance: ${formatEther(potBalanceAfterFirstGame)} tokens`);
+  console.log(`Current max bet: ${formatEther(maxBetAfterFirstGame)} tokens`);
+  console.log(`Current max payout: ${formatEther(maxPayoutAfterFirstGame)} tokens`);
+  
+  // Calculate new bet amount based on current pot (use 10% of player balance or max bet, whichever is smaller)
+  const playerTokenBalanceAfter = await playerClient.getTokenBalance(playerAccount.address);
+  const betAmountFromBalance2 = playerTokenBalanceAfter / BigInt(10);
+  const betAmount2 = betAmountFromBalance2 < maxBetAfterFirstGame ? betAmountFromBalance2 : maxBetAfterFirstGame;
+  
+  // Ensure bet amount is at least 0.001 tokens but doesn't exceed max bet
+  const finalBetAmount2 = betAmount2 < minBet ? minBet : (betAmount2 > maxBetAfterFirstGame ? maxBetAfterFirstGame : betAmount2);
+  
+  // Calculate payout (2x multiplier for example)
+  const payoutAmount2 = finalBetAmount2 * BigInt(2);
+  
+  // Ensure payout doesn't exceed max payout
+  const finalPayoutAmount2 = payoutAmount2 < maxPayoutAfterFirstGame ? payoutAmount2 : maxPayoutAfterFirstGame;
+  
+  console.log(`\n📊 Calculated Bet Amounts for Game 2:`);
+  console.log(`   Bet Amount: ${formatEther(finalBetAmount2)} tokens`);
+  console.log(`   Payout Amount: ${formatEther(finalPayoutAmount2)} tokens (${formatEther(finalPayoutAmount2 / finalBetAmount2)}x multiplier)\n`);
+  
   const seed2 = generateGameSeed();
-  const betAmount2 = finalBetAmount; // Use same bet amount
-  const payoutAmount2 = finalPayoutAmount; // Use same payout amount
   
   // Generate death cups for second game
   const deathCups2 = generateAllDeathCups(seed2, rowConfigs);
@@ -218,7 +246,7 @@ async function main() {
   const { gameId: gameId2 } = await playerClient.createGame(
     preliminaryId2,
     commitmentHash2 as `0x${string}`,
-    betAmount2
+    finalBetAmount2
   );
   console.log(`✓ Game 2 created! Game ID: ${gameId2}\n`);
 

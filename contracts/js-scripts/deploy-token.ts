@@ -219,6 +219,8 @@ async function main() {
   console.log("✓ Tokens minted to player\n");
 
   // Mint to deployer/owner (for refilling pot)
+  // Small delay to ensure previous transaction is fully processed
+  await new Promise((resolve) => setTimeout(resolve, 100));
   console.log(`💰 Minting ${formatEther(mintAmount)} ${symbol} to deployer/owner (${account.address})...`);
   const deployerMintHash = await walletClient.writeContract({
     address: tokenAddress,
@@ -264,8 +266,11 @@ async function main() {
   console.log(`   pnpm scripts:deploy`);
 }
 
-main().catch((error) => {
-  console.error("❌ Token deployment failed:", error);
-  process.exit(1);
-});
+// Only run main() if this file is executed directly (not imported)
+if (require.main === module) {
+  main().catch((error) => {
+    console.error("❌ Token deployment failed:", error);
+    process.exit(1);
+  });
+}
 
