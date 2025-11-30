@@ -133,7 +133,7 @@ Although not computed on-chain, the contract must accept payout values generated
 **Base Multiplier per Round**
 
 ```
-BaseMult = C / (C - 1)
+BaseMult = 1 / (1 - death_tiles/total_tiles)
 ```
 
 **Cumulative Multiplier**
