@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# foundry
+cache_forge/
+out/
+broadcast/
+*.sol.js
+
+# scripts
+scripts/.deployed-address.json
+contracts/cache_forge/
+contracts/cache/*
