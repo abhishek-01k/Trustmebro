@@ -16,7 +16,8 @@ import {MultiplierGame} from "../src/MultiplierGame.sol";
  *
  * Environment variables:
  *   - PRIVATE_KEY: Deployer private key
- *   - INITIAL_POT: Initial pot funding in wei (optional, defaults to 0)
+ *   - TOKEN_ADDRESS: ERC20 token address (required)
+ *   - INITIAL_POT: Initial pot funding in token units (optional, defaults to 0)
  *   - BACKEND_ADDRESS: Backend address to authorize (optional)
  */
 contract MultiplierGameScript is Script {
@@ -27,18 +28,22 @@ contract MultiplierGameScript is Script {
     function run() public {
         // Read environment variables
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        address tokenAddress = vm.envAddress("TOKEN_ADDRESS");
         uint256 initialPot = vm.envOr("INITIAL_POT", uint256(0));
         address backendAddress = vm.envOr("BACKEND_ADDRESS", address(0));
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy the contract
-        game = new MultiplierGame();
+        // Deploy the contract with token address
+        game = new MultiplierGame(tokenAddress);
         console.log("MultiplierGame deployed at:", address(game));
+        console.log("Token address:", tokenAddress);
 
         // Fund initial pot if specified
         if (initialPot > 0) {
-            game.refillPot{value: initialPot}();
+            // Note: Deployer must have approved the contract to spend tokens
+            // This script assumes approval has been done separately
+            game.refillPot(initialPot);
             console.log("Initial pot funded:", initialPot);
         }
 
@@ -72,7 +77,8 @@ contract MultiplierGameScript is Script {
  * Environment variables:
  *   - PRIVATE_KEY: Owner private key
  *   - GAME_ADDRESS: Deployed MultiplierGame address
- *   - FUND_AMOUNT: Amount to fund in wei
+ *   - FUND_AMOUNT: Amount to fund in token units
+ *   Note: Owner must have approved the contract to spend tokens before running this script
  */
 contract MultiplierGameFundScript is Script {
     function run() public {
@@ -84,7 +90,7 @@ contract MultiplierGameFundScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        game.refillPot{value: fundAmount}();
+        game.refillPot(fundAmount);
 
         vm.stopBroadcast();
 

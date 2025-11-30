@@ -11,8 +11,31 @@ const ANVIL_RPC_URL = "http://localhost:8545";
 const ANVIL_PRIVATE_KEY =
   "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"; // Anvil account #0
 
+// Standard ERC20 ABI for token operations
+const ERC20_ABI = [
+  {
+    constant: false,
+    inputs: [
+      { name: "_spender", type: "address" },
+      { name: "_value", type: "uint256" },
+    ],
+    name: "approve",
+    outputs: [{ name: "", type: "bool" }],
+    type: "function",
+  },
+] as const;
+
 async function main() {
   console.log("🚀 Deploying MultiplierGame contract to Anvil...\n");
+
+  // Get token address from environment or use default
+  const tokenAddress = (process.env.TOKEN_ADDRESS as Address) || undefined;
+  if (!tokenAddress) {
+    console.error("❌ TOKEN_ADDRESS environment variable is required");
+    console.error("   Please set TOKEN_ADDRESS to an ERC20 token address");
+    console.error("   Example: TOKEN_ADDRESS=0x... pnpm contracts:deploy");
+    process.exit(1);
+  }
 
   // Check if Anvil is running
   try {
@@ -46,13 +69,16 @@ async function main() {
   const abi = loadContractABI();
   const bytecode = loadContractBytecode();
 
-  // Deploy contract
+  console.log(`✓ Token address: ${tokenAddress}\n`);
+
+  // Deploy contract with token address as constructor argument
   console.log("📦 Deploying contract...");
   const hash = await walletClient.deployContract({
     abi,
     bytecode: bytecode as `0x${string}`,
     account,
     chain: anvil,
+    args: [tokenAddress],
   });
 
   console.log(`✓ Deployment transaction: ${hash}`);
@@ -71,15 +97,29 @@ async function main() {
   // Save deployment address
   saveDeployedAddress(contractAddress, anvil.id);
 
-  // Fund initial pot (100 ETH)
-  console.log("💰 Funding initial pot with 100 ETH...");
+  // Fund initial pot (100 tokens)
+  console.log("💰 Funding initial pot with 100 tokens...");
+  
+  // First, approve the contract to spend tokens
+  const approveHash = await walletClient.writeContract({
+    address: tokenAddress,
+    abi: ERC20_ABI,
+    functionName: "approve",
+    args: [contractAddress, BigInt("100000000000000000000")], // 100 tokens (assuming 18 decimals)
+    account,
+    chain: anvil,
+  });
+  await publicClient.waitForTransactionReceipt({ hash: approveHash });
+  console.log("✓ Token approval confirmed");
+
+  // Then, refill the pot
   const fundHash = await walletClient.writeContract({
     address: contractAddress,
     abi,
     functionName: "refillPot",
+    args: [BigInt("100000000000000000000")], // 100 tokens
     account,
     chain: anvil,
-    value: BigInt("1000000000000000000"), // 1 ETH
   });
 
   await publicClient.waitForTransactionReceipt({ hash: fundHash });
@@ -110,13 +150,21 @@ async function main() {
     functionName: "owner",
   })) as Address;
 
+  // Get token address from contract
+  const tokenAddr = (await publicClient.readContract({
+    address: contractAddress,
+    abi,
+    functionName: "token",
+  })) as Address;
+
   // Print summary
   console.log("=== Deployment Summary ===");
   console.log(`Contract Address: ${contractAddress}`);
+  console.log(`Token Address: ${tokenAddr}`);
   console.log(`Owner: ${owner}`);
-  console.log(`Pot Balance: ${formatEther(potBalance)} ETH`);
-  console.log(`Max Bet: ${formatEther(maxBet)} ETH`);
-  console.log(`Max Payout: ${formatEther(maxPayout)} ETH`);
+  console.log(`Pot Balance: ${formatEther(potBalance)} tokens`);
+  console.log(`Max Bet: ${formatEther(maxBet)} tokens`);
+  console.log(`Max Payout: ${formatEther(maxPayout)} tokens`);
   console.log(`Chain ID: ${anvil.id}`);
   console.log("\n✅ Deployment complete!");
 }

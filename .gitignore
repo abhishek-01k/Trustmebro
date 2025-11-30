@@ -48,3 +48,5 @@ broadcast/
 
 # scripts
 scripts/.deployed-address.json
+contracts/cache_forge/
+contracts/cache/*

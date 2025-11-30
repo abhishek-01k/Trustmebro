@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title MultiplierGame
@@ -46,6 +47,9 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
     uint256 private constant BPS_DENOMINATOR = 10000;
 
     // ============ State Variables ============
+
+    /// @notice The ERC20 token used for all game operations
+    IERC20 public immutable token;
 
     /// @notice Mapping of game ID to Game struct
     mapping(uint256 => Game) public games;
@@ -113,6 +117,7 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
     error InsufficientFees(uint256 requested, uint256 available);
     error TransferFailed();
     error ZeroBet();
+    error InvalidTokenAddress();
 
     // ============ Modifiers ============
 
@@ -126,8 +131,14 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
 
     // ============ Constructor ============
 
-    /// @notice Initializes the contract with the deployer as owner
-    constructor() Ownable(msg.sender) {}
+    /// @notice Initializes the contract with the deployer as owner and sets the ERC20 token
+    /// @param _token The address of the ERC20 token to use for all game operations
+    constructor(address _token) Ownable(msg.sender) {
+        if (_token == address(0)) {
+            revert InvalidTokenAddress();
+        }
+        token = IERC20(_token);
+    }
 
     // ============ Player Functions ============
 
@@ -135,29 +146,35 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
      * @notice Creates a new game with a bet and commitment hash
      * @param preliminaryId Off-chain game identifier
      * @param commitmentHash Hash of the reveal data (keccak256)
+     * @param betAmount The amount of tokens to bet
      * @return onChainGameId The on-chain game ID
      */
     function createGame(
         bytes32 preliminaryId,
-        bytes32 commitmentHash
-    ) external payable whenNotPaused nonReentrant returns (uint256 onChainGameId) {
-        if (msg.value == 0) {
+        bytes32 commitmentHash,
+        uint256 betAmount
+    ) external whenNotPaused nonReentrant returns (uint256 onChainGameId) {
+        if (betAmount == 0) {
             revert ZeroBet();
         }
 
         // Calculate max bet based on pot BEFORE this bet was added
-        // (msg.value is already in contract balance when function executes)
-        uint256 potBeforeBet = address(this).balance - ownerFees - msg.value;
+        uint256 potBeforeBet = token.balanceOf(address(this)) - ownerFees;
         uint256 maxBet = (potBeforeBet * MAX_BET_BPS) / BPS_DENOMINATOR;
-        if (msg.value > maxBet) {
-            revert BetExceedsMaxBet(msg.value, maxBet);
+        if (betAmount > maxBet) {
+            revert BetExceedsMaxBet(betAmount, maxBet);
+        }
+
+        // Transfer tokens from player to contract
+        if (!token.transferFrom(msg.sender, address(this), betAmount)) {
+            revert TransferFailed();
         }
 
         onChainGameId = nextOnChainGameId++;
 
         games[onChainGameId] = Game({
             player: msg.sender,
-            betAmount: msg.value,
+            betAmount: betAmount,
             commitmentHash: commitmentHash,
             status: Status.CREATED,
             preliminaryGameId: preliminaryId,
@@ -169,7 +186,7 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
             preliminaryId,
             onChainGameId,
             msg.sender,
-            msg.value,
+            betAmount,
             commitmentHash
         );
     }
@@ -203,8 +220,7 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
         ownerFees += houseFee;
 
         // Transfer payout to player
-        (bool success, ) = payable(game.player).call{value: playerPayout}("");
-        if (!success) {
+        if (!token.transfer(game.player, playerPayout)) {
             revert TransferFailed();
         }
 
@@ -270,9 +286,16 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
 
     /**
      * @notice Add funds to the pot
+     * @param amount The amount of tokens to add to the pot
      */
-    function refillPot() external payable onlyOwner {
-        emit PotRefilled(msg.sender, msg.value);
+    function refillPot(uint256 amount) external onlyOwner {
+        if (amount == 0) {
+            revert ZeroBet();
+        }
+        if (!token.transferFrom(msg.sender, address(this), amount)) {
+            revert TransferFailed();
+        }
+        emit PotRefilled(msg.sender, amount);
     }
 
     /**
@@ -286,8 +309,7 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
 
         ownerFees -= amount;
 
-        (bool success, ) = payable(owner()).call{value: amount}("");
-        if (!success) {
+        if (!token.transfer(owner(), amount)) {
             revert TransferFailed();
         }
 
@@ -301,7 +323,7 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
      * @return The pot balance available for payouts
      */
     function getPotBalance() public view returns (uint256) {
-        return address(this).balance - ownerFees;
+        return token.balanceOf(address(this)) - ownerFees;
     }
 
     /**
@@ -320,11 +342,5 @@ contract MultiplierGame is ReentrancyGuard, Ownable, Pausable {
         return (getPotBalance() * MAX_PAYOUT_BPS) / BPS_DENOMINATOR;
     }
 
-    // ============ Receive Function ============
-
-    /// @notice Allow contract to receive ETH directly (for pot funding)
-    receive() external payable {
-        emit PotRefilled(msg.sender, msg.value);
-    }
 }
 

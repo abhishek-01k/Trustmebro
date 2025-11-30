@@ -19,18 +19,80 @@ export interface Game {
   createdAt: bigint;
 }
 
+// Standard ERC20 ABI for token operations
+const ERC20_ABI = [
+  {
+    constant: true,
+    inputs: [{ name: "_owner", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ name: "balance", type: "uint256" }],
+    type: "function",
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: "_spender", type: "address" },
+      { name: "_value", type: "uint256" },
+    ],
+    name: "approve",
+    outputs: [{ name: "", type: "bool" }],
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [
+      { name: "_owner", type: "address" },
+      { name: "_spender", type: "address" },
+    ],
+    name: "allowance",
+    outputs: [{ name: "", type: "uint256" }],
+    type: "function",
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: "_to", type: "address" },
+      { name: "_value", type: "uint256" },
+    ],
+    name: "transfer",
+    outputs: [{ name: "", type: "bool" }],
+    type: "function",
+  },
+  {
+    constant: false,
+    inputs: [
+      { name: "_from", type: "address" },
+      { name: "_to", type: "address" },
+      { name: "_value", type: "uint256" },
+    ],
+    name: "transferFrom",
+    outputs: [{ name: "", type: "bool" }],
+    type: "function",
+  },
+] as const;
+
 export class MultiplierGameClient {
   private publicClient;
   private walletClient;
   private contractAddress: Address;
+  private tokenAddress: Address;
   private abi;
 
   constructor(
     rpcUrl: string = "http://localhost:8545",
-    account?: PrivateKeyAccount
+    account?: PrivateKeyAccount,
+    tokenAddress?: Address
   ) {
     this.contractAddress = getDeployedAddress() as Address;
     this.abi = loadContractABI();
+
+    // Get token address from contract if not provided
+    if (tokenAddress) {
+      this.tokenAddress = tokenAddress;
+    } else {
+      // Will be set when we read from contract
+      this.tokenAddress = "0x0" as Address;
+    }
 
     this.publicClient = createPublicClient({
       chain: anvil,
@@ -54,6 +116,54 @@ export class MultiplierGameClient {
   }
 
   /**
+   * Get token address from contract
+   */
+  async getTokenAddress(): Promise<Address> {
+    if (this.tokenAddress !== "0x0") {
+      return this.tokenAddress;
+    }
+    const tokenAddr = await this.publicClient.readContract({
+      address: this.contractAddress,
+      abi: this.abi,
+      functionName: "token",
+    }) as Address;
+    this.tokenAddress = tokenAddr;
+    return tokenAddr;
+  }
+
+  /**
+   * Approve tokens for the game contract
+   */
+  async approveToken(amount: bigint): Promise<Hash> {
+    if (!this.walletClient) {
+      throw new Error("Wallet client not initialized. Provide an account in constructor.");
+    }
+    const tokenAddr = await this.getTokenAddress();
+    const hash = await this.walletClient.writeContract({
+      address: tokenAddr,
+      abi: ERC20_ABI,
+      functionName: "approve",
+      args: [this.contractAddress, amount],
+      chain: anvil,
+    });
+    await this.publicClient.waitForTransactionReceipt({ hash });
+    return hash;
+  }
+
+  /**
+   * Get token balance for an address
+   */
+  async getTokenBalance(address: Address): Promise<bigint> {
+    const tokenAddr = await this.getTokenAddress();
+    return await this.publicClient.readContract({
+      address: tokenAddr,
+      abi: ERC20_ABI,
+      functionName: "balanceOf",
+      args: [address],
+    }) as bigint;
+  }
+
+  /**
    * Create a game with a bet
    */
   async createGame(
@@ -65,12 +175,14 @@ export class MultiplierGameClient {
       throw new Error("Wallet client not initialized. Provide an account in constructor.");
     }
 
+    // Approve tokens first
+    await this.approveToken(betAmount);
+
     const hash = await this.walletClient.writeContract({
       address: this.contractAddress,
       abi: this.abi,
       functionName: "createGame",
-      args: [preliminaryId, commitmentHash],
-      value: betAmount,
+      args: [preliminaryId, commitmentHash, betAmount],
       chain: anvil,
     });
 
@@ -317,11 +429,14 @@ export class MultiplierGameClient {
       throw new Error("Wallet client not initialized. Provide an account in constructor.");
     }
 
+    // Approve tokens first
+    await this.approveToken(amount);
+
     const hash = await this.walletClient.writeContract({
       address: this.contractAddress,
       abi: this.abi,
       functionName: "refillPot",
-      value: amount,
+      args: [amount],
       chain: anvil,
     });
 
@@ -354,6 +469,13 @@ export class MultiplierGameClient {
    */
   getAddress(): Address {
     return this.contractAddress;
+  }
+
+  /**
+   * Get token address
+   */
+  async getToken(): Promise<Address> {
+    return await this.getTokenAddress();
   }
 }
 
