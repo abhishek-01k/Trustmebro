@@ -150,16 +150,35 @@ export class MultiplierGameClient {
       abi: this.abi,
       functionName: "getGame",
       args: [gameId],
-    });
+    }) as any;
 
-    return {
-      player: result[0] as Address,
-      betAmount: result[1] as bigint,
-      commitmentHash: result[2] as Hash,
-      status: result[3] as GameStatus,
-      preliminaryGameId: result[4] as Hash,
-      createdAt: result[5] as bigint,
-    };
+    // viem returns structs as objects with named properties
+    // The struct has fields: player, betAmount, commitmentHash, status, preliminaryGameId, createdAt
+    if (result && typeof result === 'object') {
+      // Check if it's an array-like structure (tuple)
+      if (Array.isArray(result)) {
+        return {
+          player: result[0] as Address,
+          betAmount: result[1] as bigint,
+          commitmentHash: result[2] as Hash,
+          status: result[3] as GameStatus,
+          preliminaryGameId: result[4] as Hash,
+          createdAt: result[5] as bigint,
+        };
+      } else if (result.player !== undefined) {
+        // Object with named properties
+        return {
+          player: result.player as Address,
+          betAmount: result.betAmount as bigint,
+          commitmentHash: result.commitmentHash as Hash,
+          status: result.status as GameStatus,
+          preliminaryGameId: result.preliminaryGameId as Hash,
+          createdAt: result.createdAt as bigint,
+        };
+      }
+    }
+    
+    throw new Error(`Invalid game data returned for gameId ${gameId}: ${JSON.stringify(result)}`);
   }
 
   /**

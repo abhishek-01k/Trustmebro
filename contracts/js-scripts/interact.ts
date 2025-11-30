@@ -78,9 +78,10 @@ async function main() {
   console.log("-".repeat(50));
 
   // Generate seed and calculate payout
+  // Use bet amount within max bet limit (1% of pot)
   const seed = keccak256(toBytes(`game-seed-${Date.now()}`));
-  const betAmount = BigInt("100000000000000000"); // 0.001 ETH
-  const payoutAmount = BigInt("100000000000000000"); // 0.01 ETH (2x multiplier)
+  const betAmount = BigInt("5000000000000000"); // 0.005 ETH (within 0.01 ETH max)
+  const payoutAmount = BigInt("10000000000000000"); // 0.01 ETH (2x multiplier, within 0.05 ETH max)
   const commitmentHash = MultiplierGameClient.createCommitment(seed, payoutAmount);
   const preliminaryId = keccak256(toBytes("preliminary-game-1"));
 
@@ -106,7 +107,12 @@ async function main() {
   console.log(`Player: ${game.player}`);
   console.log(`Bet Amount: ${formatEther(game.betAmount)} ETH`);
   console.log(`Status: ${formatStatus(game.status)}`);
-  console.log(`Created At: ${new Date(Number(game.createdAt) * 1000).toISOString()}\n`);
+  const createdAtTimestamp = Number(game.createdAt);
+  if (createdAtTimestamp > 0) {
+    console.log(`Created At: ${new Date(createdAtTimestamp * 1000).toISOString()}\n`);
+  } else {
+    console.log(`Created At: ${createdAtTimestamp}\n`);
+  }
 
   // 5. Simulate gameplay (wait a bit)
   console.log("⏳ Simulating gameplay (off-chain)...\n");
@@ -134,14 +140,15 @@ async function main() {
   console.log("🎲 Creating Second Game (Player)");
   console.log("-".repeat(50));
   const seed2 = keccak256(toBytes(`game-seed-${Date.now()}-2`));
-  const payoutAmount2 = BigInt("2000000000000000000"); // 2 ETH
+  const betAmount2 = BigInt("3000000000000000"); // 0.003 ETH
+  const payoutAmount2 = BigInt("6000000000000000"); // 0.006 ETH (2x multiplier, within limits)
   const commitmentHash2 = MultiplierGameClient.createCommitment(seed2, payoutAmount2);
   const preliminaryId2 = keccak256(toBytes("preliminary-game-2"));
 
   const { gameId: gameId2 } = await playerClient.createGame(
     preliminaryId2,
     commitmentHash2,
-    betAmount
+    betAmount2
   );
   console.log(`✓ Game 2 created! Game ID: ${gameId2}\n`);
 
@@ -158,14 +165,18 @@ async function main() {
   console.log("👑 Testing Owner Functions");
   console.log("-".repeat(50));
 
-  // Refill pot
-  const refillAmount = BigInt("50000000000000000000"); // 50 ETH
+  // Refill pot (add more funds to increase max bet/payout limits)
+  const refillAmount = BigInt("10000000000000000000"); // 10 ETH
   console.log(`Refilling pot with ${formatEther(refillAmount)} ETH...`);
   const refillTx = await ownerClient.refillPot(refillAmount);
   console.log(`✓ Refill transaction: ${refillTx}`);
 
   const potBalanceAfterRefill = await ownerClient.getPotBalance();
-  console.log(`Pot balance after refill: ${formatEther(potBalanceAfterRefill)} ETH\n`);
+  const newMaxBet = await ownerClient.getMaxBet();
+  const newMaxPayout = await ownerClient.getMaxPayout();
+  console.log(`Pot balance after refill: ${formatEther(potBalanceAfterRefill)} ETH`);
+  console.log(`New max bet: ${formatEther(newMaxBet)} ETH`);
+  console.log(`New max payout: ${formatEther(newMaxPayout)} ETH\n`);
 
   // Summary
   console.log("=".repeat(50));
