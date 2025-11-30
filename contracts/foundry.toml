@@ -11,6 +11,7 @@ cache_path = "cache_forge"
 # Remappings
 remappings = [
     "@forge-std/=lib/forge-std/src/",
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
 ]
 
 # Solidity compiler settings
