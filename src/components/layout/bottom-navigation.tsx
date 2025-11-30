@@ -36,14 +36,18 @@ const BottomNavigation = () => {
 
   return (
     <nav 
-      className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center px-4"
-      style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-center px-4 backdrop-blur-xl"
+      style={{ 
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+        background: `linear-gradient(to top, ${colors.background.dark}dd 0%, ${colors.background.dark}aa 50%, transparent 100%)`,
+      }}
     >
       <div 
-        className="flex items-center gap-1.5 rounded-2xl backdrop-blur-xl px-2 py-2 dark:backdrop-blur-2xl"
+        className="flex items-center gap-1.5 rounded-2xl backdrop-blur-2xl px-2 py-2"
         style={{
           border: `1px solid ${colors.border.white10}`,
-          backgroundColor: colors.card.medium,
+          backgroundColor: `${colors.card.medium}cc`,
+          boxShadow: '0 -4px 24px rgba(0, 0, 0, 0.3)',
         }}
       >
         {navItems.map((item) => {

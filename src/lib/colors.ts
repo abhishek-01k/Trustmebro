@@ -83,12 +83,19 @@ export const colorClasses = {
  */
 export function getColor(path: string): string {
   const keys = path.split(".");
-  let value: any = colors;
+  let value: unknown = colors;
   for (const key of keys) {
-    value = value[key];
+    if (typeof value === "object" && value !== null && key in value) {
+      value = (value as Record<string, unknown>)[key];
+    } else {
+      throw new Error(`Color path "${path}" not found`);
+    }
     if (value === undefined) {
       throw new Error(`Color path "${path}" not found`);
     }
+  }
+  if (typeof value !== "string") {
+    throw new Error(`Color path "${path}" does not resolve to a string`);
   }
   return value;
 }
