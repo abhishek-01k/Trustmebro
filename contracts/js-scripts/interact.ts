@@ -1,7 +1,8 @@
 import { privateKeyToAccount } from "viem/accounts";
-import { keccak256, encodePacked, toBytes } from "viem";
+import { keccak256, encodePacked, toBytes, parseEther } from "viem";
 import { MultiplierGameClient, GameStatus } from "./lib/multiplier-game-client";
 import { createCommitmentHash, generateAllDeathCups, generateGameSeed, getGameData } from "./utils/verifiable-utils";
+import { loadDeployedToken } from "./deploy-token";
 
 // Anvil default private keys
 const PLAYER_PRIVATE_KEY =
@@ -32,14 +33,24 @@ async function main() {
   console.log("🎮 MultiplierGame Interaction Demo\n");
   console.log("=".repeat(50) + "\n");
 
+  // Load deployed token address
+  const deployedToken = loadDeployedToken();
+  if (!deployedToken) {
+    console.error("❌ No deployed token found. Please deploy a token first:");
+    console.error("   pnpm scripts:deploy-token");
+    process.exit(1);
+  }
+  const tokenAddress = deployedToken.address as `0x${string}`;
+  console.log(`✓ Using token address: ${tokenAddress}\n`);
+
   // Create clients for different roles
   const playerAccount = privateKeyToAccount(PLAYER_PRIVATE_KEY as `0x${string}`);
   const backendAccount = privateKeyToAccount(BACKEND_PRIVATE_KEY as `0x${string}`);
   const ownerAccount = privateKeyToAccount(OWNER_PRIVATE_KEY as `0x${string}`);
 
-  const playerClient = new MultiplierGameClient("http://localhost:8545", playerAccount);
-  const backendClient = new MultiplierGameClient("http://localhost:8545", backendAccount);
-  const ownerClient = new MultiplierGameClient("http://localhost:8545", ownerAccount);
+  const playerClient = new MultiplierGameClient("http://localhost:8545", playerAccount, tokenAddress);
+  const backendClient = new MultiplierGameClient("http://localhost:8545", backendAccount, tokenAddress);
+  const ownerClient = new MultiplierGameClient("http://localhost:8545", ownerAccount, tokenAddress);
 
   console.log(`Contract Address: ${playerClient.getAddress()}\n`);
   console.log(`Player: ${playerAccount.address}`);
@@ -58,6 +69,31 @@ async function main() {
   console.log(`Max Bet: ${formatEther(maxBet)} tokens`);
   console.log(`Max Payout: ${formatEther(maxPayout)} tokens`);
   console.log(`Owner: ${owner}\n`);
+
+  // Check player token balance
+  console.log("💰 Player Token Balance");
+  console.log("-".repeat(50));
+  const playerTokenBalance = await playerClient.getTokenBalance(playerAccount.address);
+  console.log(`Player Token Balance: ${formatEther(playerTokenBalance)} tokens\n`);
+
+  // Calculate appropriate bet amounts based on player balance and contract limits
+  // Use 10% of player balance or max bet, whichever is smaller
+  const betAmountFromBalance = playerTokenBalance / BigInt(10);
+  const betAmount = betAmountFromBalance < maxBet ? betAmountFromBalance : maxBet;
+  
+  // Ensure bet amount is at least 0.001 tokens (for testing)
+  const minBet = parseEther("0.001");
+  const finalBetAmount = betAmount < minBet ? minBet : betAmount;
+  
+  // Calculate payout (2x multiplier for example)
+  const payoutAmount = finalBetAmount * BigInt(2);
+  
+  // Ensure payout doesn't exceed max payout
+  const finalPayoutAmount = payoutAmount < maxPayout ? payoutAmount : maxPayout;
+  
+  console.log(`📊 Calculated Bet Amounts:`);
+  console.log(`   Bet Amount: ${formatEther(finalBetAmount)} tokens`);
+  console.log(`   Payout Amount: ${formatEther(finalPayoutAmount)} tokens (${formatEther(finalPayoutAmount / finalBetAmount)}x multiplier)\n`);
 
   // 2. Authorize backend (owner)
   console.log("🔐 Authorizing Backend (Owner)");
@@ -78,12 +114,12 @@ async function main() {
   console.log("🎲 Creating Game (Player)");
   console.log("-".repeat(50));
 
-  // Generate seed and calculate payout
-  // Use bet amount within max bet limit (1% of pot)
-  const betAmount = BigInt("5000000000000000"); // 0.005 tokens (within 0.01 tokens max)
-  const payoutAmount = BigInt("10000000000000000"); // 0.01 tokens (2x multiplier, within 0.05 tokens max)
-  // const commitmentHash = MultiplierGameClient.createCommitment(seed, payoutAmount);
-  
+  // Ensure player has approved tokens
+  console.log("🔐 Approving tokens for game contract...");
+  const approvalAmount = finalBetAmount * BigInt(10); // Approve 10x for multiple games
+  await playerClient.approveToken(approvalAmount);
+  console.log(`✓ Approved ${formatEther(approvalAmount)} tokens\n`);
+
   const preliminaryId = keccak256(toBytes(`game-id-${Date.now()}`)); //Backend game id
   const seed = generateGameSeed()
   console.log(`Seed: ${seed}`);
@@ -118,13 +154,13 @@ async function main() {
   console.log('   Game Data: ', gameData);
   
   
-  console.log(`Bet Amount: ${formatEther(betAmount)} tokens`);
+  console.log(`Bet Amount: ${formatEther(finalBetAmount)} tokens`);
   // console.log(`Commitment Hash: ${commitmentHash}\n`);
 
   const { gameId, txHash } = await playerClient.createGame(
     preliminaryId,
     commitmentHash as `0x${string}`,
-    betAmount
+    finalBetAmount
   );
 
   console.log(`✓ Game created!`);
@@ -155,7 +191,7 @@ async function main() {
   const playerBalanceBefore = await playerClient.getPotBalance();
   console.log(`Pot balance before: ${formatEther(playerBalanceBefore)} tokens`);
 
-  const cashOutTx = await backendClient.cashOut(gameId, payoutAmount, seed);
+  const cashOutTx = await backendClient.cashOut(gameId, finalPayoutAmount, seed);
   console.log(`✓ Cash out transaction: ${cashOutTx}`);
 
   const gameAfterCashOut = await playerClient.getGame(gameId);
@@ -170,15 +206,18 @@ async function main() {
   // 7. Create another game to test mark as lost
   console.log("🎲 Creating Second Game (Player)");
   console.log("-".repeat(50));
-  const seed2 = keccak256(toBytes(`game-seed-${Date.now()}-2`));
-  const betAmount2 = BigInt("3000000000000000"); // 0.003 tokens
-  const payoutAmount2 = BigInt("6000000000000000"); // 0.006 tokens (2x multiplier, within limits)
-  const commitmentHash2 = MultiplierGameClient.createCommitment(seed2, payoutAmount2);
-  const preliminaryId2 = keccak256(toBytes("preliminary-game-2"));
+  const seed2 = generateGameSeed();
+  const betAmount2 = finalBetAmount; // Use same bet amount
+  const payoutAmount2 = finalPayoutAmount; // Use same payout amount
+  
+  // Generate death cups for second game
+  const deathCups2 = generateAllDeathCups(seed2, rowConfigs);
+  const commitmentHash2 = createCommitmentHash(version, deathCups2, seed2);
+  const preliminaryId2 = keccak256(toBytes(`preliminary-game-${Date.now()}-2`));
 
   const { gameId: gameId2 } = await playerClient.createGame(
     preliminaryId2,
-    commitmentHash2,
+    commitmentHash2 as `0x${string}`,
     betAmount2
   );
   console.log(`✓ Game 2 created! Game ID: ${gameId2}\n`);
@@ -186,7 +225,7 @@ async function main() {
   // 8. Mark game as lost (backend)
   console.log("❌ Marking Game as Lost (Backend)");
   console.log("-".repeat(50));
-  const markLostTx = await backendClient.markGameAsLost(gameId2, seed2);
+  const markLostTx = await backendClient.markGameAsLost(gameId2, seed2 as `0x${string}`);
   console.log(`✓ Mark lost transaction: ${markLostTx}`);
 
   const game2AfterLost = await playerClient.getGame(gameId2);
@@ -196,18 +235,35 @@ async function main() {
   console.log("👑 Testing Owner Functions");
   console.log("-".repeat(50));
 
-  // Refill pot (add more funds to increase max bet/payout limits)
-  const refillAmount = BigInt("10000000000000000000"); // 10 tokens
-  console.log(`Refilling pot with ${formatEther(refillAmount)} tokens...`);
-  const refillTx = await ownerClient.refillPot(refillAmount);
-  console.log(`✓ Refill transaction: ${refillTx}`);
+  // Check owner token balance first
+  const ownerTokenBalance = await ownerClient.getTokenBalance(ownerAccount.address);
+  console.log(`Owner Token Balance: ${formatEther(ownerTokenBalance)} tokens`);
 
-  const potBalanceAfterRefill = await ownerClient.getPotBalance();
-  const newMaxBet = await ownerClient.getMaxBet();
-  const newMaxPayout = await ownerClient.getMaxPayout();
-  console.log(`Pot balance after refill: ${formatEther(potBalanceAfterRefill)} tokens`);
-  console.log(`New max bet: ${formatEther(newMaxBet)} tokens`);
-  console.log(`New max payout: ${formatEther(newMaxPayout)} tokens\n`);
+  // Refill pot (add more funds to increase max bet/payout limits)
+  // Use 10% of owner balance or 10 tokens, whichever is smaller
+  const refillAmountFromBalance = ownerTokenBalance / BigInt(10);
+  const refillAmount = refillAmountFromBalance < parseEther("10") 
+    ? refillAmountFromBalance 
+    : parseEther("10");
+  
+  if (refillAmount > BigInt(0)) {
+    // Approve tokens first
+    console.log(`Approving ${formatEther(refillAmount)} tokens for refill...`);
+    await ownerClient.approveToken(refillAmount);
+    
+    console.log(`Refilling pot with ${formatEther(refillAmount)} tokens...`);
+    const refillTx = await ownerClient.refillPot(refillAmount);
+    console.log(`✓ Refill transaction: ${refillTx}`);
+
+    const potBalanceAfterRefill = await ownerClient.getPotBalance();
+    const newMaxBet = await ownerClient.getMaxBet();
+    const newMaxPayout = await ownerClient.getMaxPayout();
+    console.log(`Pot balance after refill: ${formatEther(potBalanceAfterRefill)} tokens`);
+    console.log(`New max bet: ${formatEther(newMaxBet)} tokens`);
+    console.log(`New max payout: ${formatEther(newMaxPayout)} tokens\n`);
+  } else {
+    console.log("⚠️  Owner has insufficient tokens to refill pot\n");
+  }
 
   // Summary
   console.log("=".repeat(50));

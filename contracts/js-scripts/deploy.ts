@@ -14,6 +14,13 @@ const ANVIL_PRIVATE_KEY =
 // Standard ERC20 ABI for token operations
 const ERC20_ABI = [
   {
+    constant: true,
+    inputs: [{ name: "_owner", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ name: "balance", type: "uint256" }],
+    type: "function",
+  },
+  {
     constant: false,
     inputs: [
       { name: "_spender", type: "address" },
@@ -97,33 +104,49 @@ async function main() {
   // Save deployment address
   saveDeployedAddress(contractAddress, anvil.id);
 
-  // Fund initial pot (100 tokens)
-  console.log("💰 Funding initial pot with 100 tokens...");
-  
-  // First, approve the contract to spend tokens
-  const approveHash = await walletClient.writeContract({
+  // Check deployer token balance
+  const deployerBalance = (await publicClient.readContract({
     address: tokenAddress,
     abi: ERC20_ABI,
-    functionName: "approve",
-    args: [contractAddress, BigInt("100000000000000000000")], // 100 tokens (assuming 18 decimals)
-    account,
-    chain: anvil,
-  });
-  await publicClient.waitForTransactionReceipt({ hash: approveHash });
-  console.log("✓ Token approval confirmed");
+    functionName: "balanceOf",
+    args: [account.address],
+  })) as bigint;
 
-  // Then, refill the pot
-  const fundHash = await walletClient.writeContract({
-    address: contractAddress,
-    abi,
-    functionName: "refillPot",
-    args: [BigInt("100000000000000000000")], // 100 tokens
-    account,
-    chain: anvil,
-  });
+  console.log(`💰 Deployer token balance: ${formatEther(deployerBalance)} tokens`);
 
-  await publicClient.waitForTransactionReceipt({ hash: fundHash });
-  console.log("✓ Pot funded\n");
+  // Fund initial pot if deployer has tokens
+  const refillAmount = BigInt("100000000000000000000"); // 100 tokens
+  if (deployerBalance >= refillAmount) {
+    console.log(`💰 Funding initial pot with ${formatEther(refillAmount)} tokens...`);
+    
+    // First, approve the contract to spend tokens
+    const approveHash = await walletClient.writeContract({
+      address: tokenAddress,
+      abi: ERC20_ABI,
+      functionName: "approve",
+      args: [contractAddress, refillAmount],
+      account,
+      chain: anvil,
+    });
+    await publicClient.waitForTransactionReceipt({ hash: approveHash });
+    console.log("✓ Token approval confirmed");
+
+    // Then, refill the pot
+    const fundHash = await walletClient.writeContract({
+      address: contractAddress,
+      abi,
+      functionName: "refillPot",
+      args: [refillAmount],
+      account,
+      chain: anvil,
+    });
+
+    await publicClient.waitForTransactionReceipt({ hash: fundHash });
+    console.log("✓ Pot funded\n");
+  } else {
+    console.log(`⚠️  Deployer has insufficient tokens to fund pot (need ${formatEther(refillAmount)}, have ${formatEther(deployerBalance)})`);
+    console.log(`   The pot can be funded later by the owner using refillPot()\n`);
+  }
 
   // Get contract state
   const potBalance = (await publicClient.readContract({

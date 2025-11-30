@@ -17,6 +17,7 @@
     "contracts:anvil": "cd contracts && anvil",
     "contracts:script": "cd contracts && forge script",
     "scripts:deploy": "tsx contracts/js-scripts/deploy.ts",
+    "scripts:deploy-token": "tsx contracts/js-scripts/deploy-token.ts",
     "scripts:interact": "tsx contracts/js-scripts/interact.ts"
   },
   "dependencies": {
