@@ -45,3 +45,6 @@ cache_forge/
 out/
 broadcast/
 *.sol.js
+
+# scripts
+scripts/.deployed-address.json
