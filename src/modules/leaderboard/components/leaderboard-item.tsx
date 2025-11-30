@@ -1,5 +1,5 @@
-import { cn, formatScore } from '@/src/lib/utils';
-import { LeaderboardEntry } from '@/src/types/global';
+import { cn, formatScore } from '@/lib/utils';
+import { LeaderboardEntry } from '@/types/global';
 import Image from 'next/image';
 import React from 'react';
 

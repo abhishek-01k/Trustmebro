@@ -1,7 +1,7 @@
 import React from "react";
 import { Crown, Coins } from "lucide-react";
-import { LeaderboardEntry } from "@/src/types/global";
-import { formatScore, truncateToChars } from "@/src/lib/utils";
+import { LeaderboardEntry } from "@/types/global";
+import { formatScore, truncateToChars } from "@/lib/utils";
 import Image from "next/image";
 
 interface TopThreePodiumProps {

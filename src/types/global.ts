@@ -8,3 +8,11 @@ export interface LeaderboardEntry {
     avatar?: string; // Profile image URL
     userId?: string; // User ID
   }
+
+// User registration payload
+export interface UserRegistrationPayload {
+  farcasterFid: number;
+  username: string;
+  avatar?: string;
+  walletAddress?: string;
+}

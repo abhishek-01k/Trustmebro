@@ -1,8 +1,8 @@
 import React from "react";
-import { useGlobalContext } from "@/src/context/global-context";
-import { HomeScreen } from "@/src/modules/home";
-import { LeaderboardScreen } from "@/src/modules/leaderboard";
-import { ProfileScreen } from "@/src/modules/profile";
+import { useGlobalContext } from "@/context/global-context";
+import { HomeScreen } from "@/modules/home";
+import { LeaderboardScreen } from "@/modules/leaderboard";
+import { ProfileScreen } from "@/modules/profile";
 
 const BodySection = () => {
   const { activeTab } = useGlobalContext();

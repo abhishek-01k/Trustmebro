@@ -1,7 +1,1 @@
-onlyBuiltDependencies:
-  - '@reown/appkit'
-  - bufferutil
-  - keccak
-  - sharp
-  - unrs-resolver
-  - utf-8-validate
+onlyBuiltDependencies: '["prisma", "@prisma/engines"]'

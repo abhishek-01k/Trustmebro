@@ -1,6 +1,6 @@
 import React from "react";
-import { Skeleton } from "@/src/components/ui/skeleton";
-import { LeaderboardEntry } from "@/src/types/global";
+import { Skeleton } from "@/components/ui/skeleton";
+import { LeaderboardEntry } from "@/types/global";
 import { TopThreePodium } from "./top-three-podium";
 import { LeaderboardItem } from "./leaderboard-item";
 

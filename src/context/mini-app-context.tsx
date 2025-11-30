@@ -30,6 +30,12 @@ const MiniAppProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// Safe hook that returns null if context not ready (for registration hook)
+const useMiniAppContext = () => {
+  return useContext(MiniAppContext);
+};
+
+// Original hook that throws if context not ready (for components that require it)
 const useMiniApp = () => {
   const context = useContext(MiniAppContext);
   if (!context) {
@@ -38,4 +44,4 @@ const useMiniApp = () => {
   return context;
 };
 
-export { MiniAppProvider, useMiniApp };
+export { MiniAppProvider, useMiniApp, useMiniAppContext };

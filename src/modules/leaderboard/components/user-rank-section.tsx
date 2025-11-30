@@ -1,5 +1,5 @@
 import React from "react";
-import { LeaderboardEntry } from "@/src/types/global";
+import { LeaderboardEntry } from "@/types/global";
 import { LeaderboardItem } from "./leaderboard-item";
 
 interface UserRankSectionProps {
