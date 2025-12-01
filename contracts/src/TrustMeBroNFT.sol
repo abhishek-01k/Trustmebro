@@ -8,13 +8,16 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title TrustMeBroNFT
- * @notice A free soulbound ERC721 NFT for game access with dynamic metadata
+ * @notice A soulbound ERC721 NFT for game access with dynamic metadata
  * @dev Soulbound implementation - tokens cannot be transferred after minting
  */
 contract TrustMeBroNFT is ERC721, Ownable, Pausable {
     using Strings for uint256;
 
     // ============ State Variables ============
+
+    /// @notice Price to mint one NFT
+    uint256 public constant MINT_PRICE = 0.0005 ether;
 
     /// @notice Counter for token IDs (starts at 1)
     uint256 public nextTokenId;
@@ -38,6 +41,7 @@ contract TrustMeBroNFT is ERC721, Ownable, Pausable {
     // ============ Errors ============
 
     error SoulboundTransferNotAllowed();
+    error InsufficientPayment();
 
     // ============ Constructor ============
 
@@ -53,10 +57,14 @@ contract TrustMeBroNFT is ERC721, Ownable, Pausable {
     // ============ Public Functions ============
 
     /**
-     * @notice Mint a new NFT for free
+     * @notice Mint a new NFT for 0.0005 ETH
      * @return tokenId The ID of the newly minted NFT
      */
-    function mint() external whenNotPaused returns (uint256 tokenId) {
+    function mint() external payable whenNotPaused returns (uint256 tokenId) {
+        if (msg.value < MINT_PRICE) {
+            revert InsufficientPayment();
+        }
+        
         tokenId = nextTokenId++;
         _safeMint(msg.sender, tokenId);
         emit NFTMinted(msg.sender, tokenId);
@@ -94,6 +102,15 @@ contract TrustMeBroNFT is ERC721, Ownable, Pausable {
      */
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    /**
+     * @notice Withdraw collected ETH to owner
+     */
+    function withdraw() external onlyOwner {
+        uint256 balance = address(this).balance;
+        (bool success, ) = payable(owner()).call{value: balance}("");
+        require(success, "Withdrawal failed");
     }
 
     // ============ View Functions ============

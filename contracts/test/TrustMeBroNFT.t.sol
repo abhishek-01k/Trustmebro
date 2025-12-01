@@ -24,9 +24,17 @@ contract TrustMeBroNFTTest is Test {
         string newBaseURI
     );
 
+    // Allow the test contract to receive ETH for withdraw tests
+    receive() external payable {}
+
     function setUp() public {
         // Deploy NFT contract
         nft = new TrustMeBroNFT(BASE_URI);
+        
+        // Give test addresses ETH for minting
+        vm.deal(user1, 10 ether);
+        vm.deal(user2, 10 ether);
+        vm.deal(unauthorized, 10 ether);
     }
 
     // ============ Constructor Tests ============
@@ -55,7 +63,7 @@ contract TrustMeBroNFTTest is Test {
         vm.expectEmit(true, true, true, true);
         emit NFTMinted(user1, 1);
         
-        uint256 tokenId = nft.mint();
+        uint256 tokenId = nft.mint{value: 0.0005 ether}();
 
         assertEq(tokenId, 1);
         assertEq(nft.ownerOf(1), user1);
@@ -66,9 +74,9 @@ contract TrustMeBroNFTTest is Test {
     function test_Mint_MultipleMints_IncrementsTokenId() public {
         vm.startPrank(user1);
         
-        uint256 id1 = nft.mint();
-        uint256 id2 = nft.mint();
-        uint256 id3 = nft.mint();
+        uint256 id1 = nft.mint{value: 0.0005 ether}();
+        uint256 id2 = nft.mint{value: 0.0005 ether}();
+        uint256 id3 = nft.mint{value: 0.0005 ether}();
         
         vm.stopPrank();
 
@@ -81,10 +89,10 @@ contract TrustMeBroNFTTest is Test {
 
     function test_Mint_DifferentUsers() public {
         vm.prank(user1);
-        uint256 id1 = nft.mint();
+        uint256 id1 = nft.mint{value: 0.0005 ether}();
 
         vm.prank(user2);
-        uint256 id2 = nft.mint();
+        uint256 id2 = nft.mint{value: 0.0005 ether}();
 
         assertEq(id1, 1);
         assertEq(id2, 2);
@@ -97,7 +105,31 @@ contract TrustMeBroNFTTest is Test {
 
         vm.prank(user1);
         vm.expectRevert(abi.encodeWithSignature("EnforcedPause()"));
-        nft.mint();
+        nft.mint{value: 0.0005 ether}();
+    }
+
+    function test_Mint_InsufficientPayment_Reverts() public {
+        vm.prank(user1);
+        vm.expectRevert(TrustMeBroNFT.InsufficientPayment.selector);
+        nft.mint{value: 0.0004 ether}();
+    }
+
+    function test_Mint_WithExactPayment_Success() public {
+        vm.prank(user1);
+        uint256 tokenId = nft.mint{value: 0.0005 ether}();
+        
+        assertEq(tokenId, 1);
+        assertEq(nft.ownerOf(1), user1);
+        assertEq(address(nft).balance, 0.0005 ether);
+    }
+
+    function test_Mint_WithExcessPayment_Success() public {
+        vm.prank(user1);
+        uint256 tokenId = nft.mint{value: 1 ether}();
+        
+        assertEq(tokenId, 1);
+        assertEq(nft.ownerOf(1), user1);
+        assertEq(address(nft).balance, 1 ether);
     }
 
     // ============ hasNft Tests ============
@@ -108,16 +140,16 @@ contract TrustMeBroNFTTest is Test {
 
     function test_HasNft_ReturnsTrue_WhenOwnsNFT() public {
         vm.prank(user1);
-        nft.mint();
+        nft.mint{value: 0.0005 ether}();
 
         assertTrue(nft.hasNft(user1));
     }
 
     function test_HasNft_ReturnsTrue_WithMultipleNFTs() public {
         vm.startPrank(user1);
-        nft.mint();
-        nft.mint();
-        nft.mint();
+        nft.mint{value: 0.0005 ether}();
+        nft.mint{value: 0.0005 ether}();
+        nft.mint{value: 0.0005 ether}();
         vm.stopPrank();
 
         assertTrue(nft.hasNft(user1));
@@ -128,7 +160,7 @@ contract TrustMeBroNFTTest is Test {
 
     function test_Transfer_NotAllowed() public {
         vm.prank(user1);
-        uint256 tokenId = nft.mint();
+        uint256 tokenId = nft.mint{value: 0.0005 ether}();
 
         vm.prank(user1);
         vm.expectRevert(TrustMeBroNFT.SoulboundTransferNotAllowed.selector);
@@ -137,7 +169,7 @@ contract TrustMeBroNFTTest is Test {
 
     function test_SafeTransfer_NotAllowed() public {
         vm.prank(user1);
-        uint256 tokenId = nft.mint();
+        uint256 tokenId = nft.mint{value: 0.0005 ether}();
 
         vm.prank(user1);
         vm.expectRevert(TrustMeBroNFT.SoulboundTransferNotAllowed.selector);
@@ -146,7 +178,7 @@ contract TrustMeBroNFTTest is Test {
 
     function test_Approve_StillWorks_ButTransferFails() public {
         vm.startPrank(user1);
-        uint256 tokenId = nft.mint();
+        uint256 tokenId = nft.mint{value: 0.0005 ether}();
         
         // Approval should work
         nft.approve(user2, tokenId);
@@ -170,7 +202,7 @@ contract TrustMeBroNFTTest is Test {
 
         // Mint an NFT to test tokenURI
         vm.prank(user1);
-        nft.mint();
+        nft.mint{value: 0.0005 ether}();
 
         assertEq(nft.tokenURI(1), "https://new.api.com/metadata/1");
     }
@@ -185,7 +217,7 @@ contract TrustMeBroNFTTest is Test {
         nft.setBaseURI("");
 
         vm.prank(user1);
-        nft.mint();
+        nft.mint{value: 0.0005 ether}();
 
         assertEq(nft.tokenURI(1), "");
     }
@@ -194,9 +226,9 @@ contract TrustMeBroNFTTest is Test {
 
     function test_TokenURI_ReturnsCorrectURI_WithPositionStartingAtZero() public {
         vm.startPrank(user1);
-        nft.mint(); // ID 1
-        nft.mint(); // ID 2
-        nft.mint(); // ID 3
+        nft.mint{value: 0.0005 ether}(); // ID 1
+        nft.mint{value: 0.0005 ether}(); // ID 2
+        nft.mint{value: 0.0005 ether}(); // ID 3
         vm.stopPrank();
 
         // Token ID 1 should map to position 0
@@ -244,7 +276,7 @@ contract TrustMeBroNFTTest is Test {
         nft.unpause();
 
         vm.prank(user1);
-        uint256 tokenId = nft.mint();
+        uint256 tokenId = nft.mint{value: 0.0005 ether}();
 
         assertEq(tokenId, 1);
     }
@@ -255,11 +287,11 @@ contract TrustMeBroNFTTest is Test {
         assertEq(nft.totalSupply(), 0);
 
         vm.startPrank(user1);
-        nft.mint();
+        nft.mint{value: 0.0005 ether}();
         assertEq(nft.totalSupply(), 1);
         
-        nft.mint();
-        nft.mint();
+        nft.mint{value: 0.0005 ether}();
+        nft.mint{value: 0.0005 ether}();
         assertEq(nft.totalSupply(), 3);
         vm.stopPrank();
     }
@@ -272,7 +304,7 @@ contract TrustMeBroNFTTest is Test {
 
         vm.startPrank(user1);
         for (uint8 i = 0; i < numMints; i++) {
-            nft.mint();
+            nft.mint{value: 0.0005 ether}();
         }
         vm.stopPrank();
 
@@ -287,7 +319,7 @@ contract TrustMeBroNFTTest is Test {
         // Mint enough NFTs
         vm.startPrank(user1);
         for (uint256 i = 0; i < tokenId; i++) {
-            nft.mint();
+            nft.mint{value: 0.0005 ether}();
         }
         vm.stopPrank();
 
@@ -296,5 +328,46 @@ contract TrustMeBroNFTTest is Test {
         string memory expectedURI = string.concat(BASE_URI, vm.toString(expectedPosition));
         
         assertEq(nft.tokenURI(tokenId), expectedURI);
+    }
+
+    // ============ Withdraw Tests ============
+
+    function test_Withdraw_Success() public {
+        // Mint some NFTs to collect fees
+        vm.prank(user1);
+        nft.mint{value: 0.0005 ether}();
+        vm.prank(user2);
+        nft.mint{value: 0.0005 ether}();
+
+        uint256 contractBalance = address(nft).balance;
+        assertEq(contractBalance, 0.001 ether);
+
+        uint256 ownerBalanceBefore = address(owner).balance;
+        
+        // Withdraw as owner
+        nft.withdraw();
+
+        uint256 ownerBalanceAfter = address(owner).balance;
+        assertEq(address(nft).balance, 0);
+        assertEq(ownerBalanceAfter - ownerBalanceBefore, contractBalance);
+    }
+
+    function test_Withdraw_OnlyOwner() public {
+        vm.prank(user1);
+        nft.mint{value: 0.0005 ether}();
+
+        vm.prank(unauthorized);
+        vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", unauthorized));
+        nft.withdraw();
+    }
+
+    function test_Withdraw_WithZeroBalance() public {
+        assertEq(address(nft).balance, 0);
+        
+        uint256 ownerBalanceBefore = address(owner).balance;
+        nft.withdraw();
+        uint256 ownerBalanceAfter = address(owner).balance;
+        
+        assertEq(ownerBalanceAfter, ownerBalanceBefore);
     }
 }
