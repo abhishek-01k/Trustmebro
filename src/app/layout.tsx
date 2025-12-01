@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 const gameOfSquids = localFont({
-  src: "../../public/font/Game Of Squids.ttf",
+  src: "../../public/font/GameOfSquids.ttf",
   variable: "--font-game-of-squids",
   display: "swap",
   weight: "400",

@@ -56,10 +56,29 @@ export async function POST(request: NextRequest) {
 
     const totalSignups = await prisma.waitlist.count();
 
+    // Generate cast text for sharing (minimal - let the card speak)
+    const castText = `Position #${position} locked 🔴`;
+
+    // Base URL for OG images and share pages (Vercel domain)
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://trustmebro-tan.vercel.app';
+    // App URL for miniapp link
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro';
+
+    // Frame URL with user's position for dynamic OG image (must be on Vercel domain)
+    const frameUrl = `${baseUrl}/waitlist/share?pos=${position}&total=${totalSignups}&fid=${farcasterFid}`;
+
+    // Cast intent with frame embed (shows preview card, text is minimal)
+    const castIntent = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(frameUrl)}`;
+
     return apiSuccess({
       position,
       totalSignups,
       joined: true,
+      share: {
+        castText,
+        castIntent,
+        frameUrl,
+      },
     });
   } catch (error) {
     console.error('Error joining waitlist:', error);
@@ -114,10 +133,21 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Generate share data (minimal - let the card speak)
+    const castText = `Position #${position} locked 🔴`;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://trustmebro-tan.vercel.app';
+    const frameUrl = `${baseUrl}/waitlist/share?pos=${position}&total=${totalSignups}&fid=${farcasterFid}`;
+    const castIntent = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(frameUrl)}`;
+
     return apiSuccess({
       onWaitlist: true,
       position,
       totalSignups,
+      share: {
+        castText,
+        castIntent,
+        frameUrl,
+      },
     });
   } catch (error) {
     console.error('Error checking waitlist:', error);

@@ -56,22 +56,32 @@ const WaitlistBanner = () => {
       <div className="flex flex-col items-center space-y-4">
         {isOnWaitlist && waitlistStatus ? (
           <div className="text-center space-y-4">
-            <div className="space-y-2">
-              <p className="text-white text-lg font-game-of-squids">
-                You&apos;re on the waitlist! 🎉
+            <p className="text-white text-lg font-game-of-squids">
+              You&apos;re on the waitlist! 🎉
+            </p>
+            {waitlistStatus.position && (
+              <p className="text-white/80 text-sm">
+                Position: #{waitlistStatus.position} of {waitlistStatus.totalSignups}
               </p>
-              {waitlistStatus.position && (
-                <p className="text-white/80 text-sm">
-                  Position: #{waitlistStatus.position} of {waitlistStatus.totalSignups}
-                </p>
-              )}
-            </div>
-            <Button
-              onClick={castHandler}
-              className="text-lg w-full h-12 rounded-full font-game-of-squids bg-gradient-to-b from-[#a9062c] to-[#4e1624] hover:from-[#8d0524] hover:to-[#3d1119] text-white font-semibold uppercase tracking-wide shadow-lg transition-all"
-            >
-              Cast Your Position
-            </Button>
+            )}
+            {waitlistStatus.share && (
+              <Button
+                onClick={async () => {
+                  try {
+                    await sdk.actions.composeCast({
+                      text: waitlistStatus.share!.castText,
+                      embeds: [waitlistStatus.share!.frameUrl],
+                    })
+                  } catch (error) {
+                    // Fallback to URL redirect if SDK fails
+                    window.open(waitlistStatus.share!.castIntent, '_blank')
+                  }
+                }}
+                className="text-lg w-full h-12 rounded-full font-game-of-squids bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-semibold uppercase tracking-wide shadow-lg transition-all"
+              >
+                Share
+              </Button>
+            )}
           </div>
         ) : (
           <>

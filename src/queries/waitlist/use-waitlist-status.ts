@@ -1,10 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { usePrivy } from "@privy-io/react-auth";
 
+export interface WaitlistShareData {
+  castText: string;
+  castIntent: string;
+  frameUrl: string;
+}
+
 export interface WaitlistStatus {
   onWaitlist: boolean;
   position?: number;
   totalSignups: number;
+  share?: WaitlistShareData;
 }
 
 interface ApiError {
