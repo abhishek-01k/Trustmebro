@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { sdk as miniappSdk } from "@farcaster/miniapp-sdk";
 import { useLoginToMiniApp } from "@privy-io/react-auth/farcaster";
 import { usePrivy } from "@privy-io/react-auth";
@@ -12,11 +12,13 @@ import {
   HeaderSection,
 } from "../components/layout";
 import { useRegisterUser } from "@/queries/user";
+import DesktopLayout from "@/components/desktop-layout";
 
 export default function Home() {
   const { ready, authenticated, login, user } = usePrivy();
   const { initLoginToMiniApp, loginToMiniApp } = useLoginToMiniApp();
   const { mutate: registerUser } = useRegisterUser();
+  const [isMiniApp, setIsMiniApp] = useState(false);
 
   const registeredUserIdRef = useRef<string | null>(null);
 
@@ -85,16 +87,20 @@ export default function Home() {
     }
   }, [authenticated]);
 
-  if (!ready) {
-    return <LoadingScreen />;
+  useEffect(() => {
+    const checkMiniApp = async () => {
+      const isMiniApp = await miniappSdk.isInMiniApp();
+      setIsMiniApp(isMiniApp);
+    };
+    checkMiniApp();
+  }, []);
+
+  if (!isMiniApp) {
+    return <DesktopLayout />;
   }
 
-  if (!authenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Button onClick={login}>Login to Mini App</Button>
-      </div>
-    );
+  if (!ready || !authenticated) {
+    return <LoadingScreen />;
   }
 
   return (

@@ -7,13 +7,13 @@ export async function GET() {
     accountAssociation: {
       header: "eyJmaWQiOjgzNTc4NSwidHlwZSI6ImF1dGgiLCJrZXkiOiIweEVCZDkwMzUzODY0ZkQ5MWRCZjk3RTk0NEE2ZkZjM2U5MTI1RDhEN2YifQ",
       payload: "eyJkb21haW4iOiJ0cnVzdG1lYnJvLXRhbi52ZXJjZWwuYXBwIn0",
-      signature: "Z7enX7t0OUfNca5aVRfYjNzyUJUZmLzsAKJ3hCUMSqsLYdRaVIj8zrhXH6G41tkHiJv6WJekPdLNySlecZbhdhs",
+      signature: "Z7enX7t0OUfNca5aVRfYjNzyUJUZmLzsAKJ3hCUMSqsLYdRaVIj8zrhXH6G41tkHiJv6WJekPdLNySlecZbhdhs=",
     },
     miniapp: {
       name: "Trust Me Bro",
       description: "A squid game: trust a tile, beat the odds, escape the death tile",
       version: "0.0.1",
-      tags: ["games", "warpcast", "community", "entertainment", "friends", "entertainment"],
+      tags: ["games", "warpcast", "community", "friends", "entertainment"],
       iconUrl: `${appUrl}/trustmebro_logo.png`,
       imageUrl: `${appUrl}/trustmebro_logo.png`,
       ogTitle: "Trust Me Bro",
@@ -32,4 +32,3 @@ export async function GET() {
     },
   });
 }
-
