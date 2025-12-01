@@ -24,22 +24,22 @@ const WaitlistBanner = () => {
     })
   }
 
-  // const castHandler = async () => {
-  //   if (!waitlistStatus?.position) {
-  //     return
-  //   }
+  const castHandler = async () => {
+    if (!waitlistStatus?.position) {
+      return
+    }
 
-  //   try {
-  //     const castText = `I'm #${waitlistStatus.position} on the TrustMeBro waitlist! Join me and ${waitlistStatus.totalSignups} others for early access 🎮`;
+    try {
+      const castText = `I'm #${waitlistStatus.position} on the TrustMeBro waitlist! Join me and ${waitlistStatus.totalSignups} others for early access 🎮`;
 
-  //     await sdk.actions.composeCast({
-  //       text: castText,
-  //       embeds: [`https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro`],
-  //     });
-  //   } catch (error) {
-  //     console.error("Failed to cast to Farcaster:", error);
-  //   }
-  // }
+      await sdk.actions.composeCast({
+        text: castText,
+        embeds: [`https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro`],
+      });
+    } catch (error) {
+      console.error("Failed to cast to Farcaster:", error);
+    }
+  }
 
   const isOnWaitlist = waitlistStatus?.onWaitlist ?? false
   const isLoadingState = isLoading || joinWaitlist.isPending
@@ -63,12 +63,12 @@ const WaitlistBanner = () => {
                 </p>
               )}
             </div>
-            {/* <Button
+            <Button
               onClick={castHandler}
               className="text-lg w-full h-12 rounded-full font-game-of-squids bg-gradient-to-b from-[#a9062c] to-[#4e1624] hover:from-[#8d0524] hover:to-[#3d1119] text-white font-semibold uppercase tracking-wide shadow-lg transition-all"
             >
               Cast Your Position
-            </Button> */}
+            </Button>
           </div>
         ) : (
           <>

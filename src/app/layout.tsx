@@ -32,14 +32,14 @@ export const metadata: Metadata = {
   other: {
     "fc:frame": JSON.stringify({
       version: "next",
-      imageUrl: `${appUrl}/trustmebro_splash.png`,
+      imageUrl: `${appUrl}/background_image.png`,
       button: {
         title: "Join waitlist ⭕️",
         action: {
           type: "launch_frame",
           name: "Trust me bro",
           url: appUrl,
-          splashImageUrl: `${appUrl}/trustmebro_splash.png`,
+          splashImageUrl: `${appUrl}/background_image.png`,
           splashBackgroundColor: "#000000",
         },
       },
