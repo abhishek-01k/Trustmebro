@@ -41,7 +41,7 @@ const BottomNavigation = () => {
       }}
     >
       <div 
-        className="flex items-center gap-1.5 rounded-2xl backdrop-blur-2xl px-2 py-2 border border-white/10 bg-black/80 shadow-[0_-4px_24px_rgba(0,0,0,0.3)]"
+        className="flex items-center gap-1.5 rounded-2xl backdrop-blur-2xl px-2 py-2 border border-white/10 bg-black/80"
       >
         {navItems.map((item) => {
           const Icon = item.icon;
