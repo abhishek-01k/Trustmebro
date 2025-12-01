@@ -1,7 +1,19 @@
 import { ImageResponse } from 'next/og';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const runtime = 'edge';
+
+// Handle CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
+}
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
@@ -30,7 +42,7 @@ export async function GET(request: NextRequest) {
   // Load the custom Squid Game font
   const fontData = await fetch(`${baseUrl}/font/GameOfSquids.ttf`).then((res) => res.arrayBuffer());
 
-  return new ImageResponse(
+  const imageResponse = new ImageResponse(
     (
       <div
         style={{
@@ -416,4 +428,12 @@ export async function GET(request: NextRequest) {
       ],
     }
   );
+
+  // Add CORS headers for OpenSea and NFT platforms
+  imageResponse.headers.set('Access-Control-Allow-Origin', '*');
+  imageResponse.headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  imageResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+  imageResponse.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
+
+  return imageResponse;
 }
