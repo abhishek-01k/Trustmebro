@@ -28,3 +28,14 @@ export const truncateToChars = (text: string, maxChars: number): string => {
   }
   return trimmed.slice(0, maxChars) + "...";
 };
+
+
+export const formatWalletAddress = (address: string) => {
+  if (!address) return "";
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
+export const formatPnL = (value: number) => {
+  const sign = value >= 0 ? "+" : "";
+  return `${sign}$${Math.abs(value).toLocaleString()}`;
+};

@@ -41,7 +41,7 @@ const BottomNavigation = () => {
       }}
     >
       <div 
-        className="flex items-center gap-1.5 rounded-2xl backdrop-blur-2xl px-2 py-2 border border-white/10 bg-black/80 shadow-[0_-4px_24px_rgba(0,0,0,0.3)]"
+        className="flex items-center gap-1.5 rounded-2xl backdrop-blur-2xl px-2 py-2 border border-white/10 bg-black/80"
       >
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -52,7 +52,7 @@ const BottomNavigation = () => {
               key={item.id}
               onClick={() => handleNavClick(item.id)}
               className={cn(
-                "relative flex items-center justify-center gap-2 rounded-full transition-all duration-300 ease-in-out",
+                "relative font-game-of-squids flex items-center justify-center gap-2 rounded-full transition-all duration-300 ease-in-out",
                 "active:scale-95",
                 isActive 
                   ? "px-4 py-2 text-white bg-gradient-to-b from-[#a9062c] to-[#4e1624] hover:from-[#8d0524] hover:to-[#3d1119] font-semibold uppercase tracking-wide shadow-lg"

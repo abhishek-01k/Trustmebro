@@ -19,8 +19,8 @@ export const LeaderboardContent = ({
     <div>
       {/* Top 3 Podium Section */}
       {isLoading ? (
-        <div className="relative px-4 pt-4 pb-8 mb-4">
-          <div className="relative rounded-2xl bg-linear-to-br from-[#8C5BFF] via-[#6D40C6] to-[#E91E63] p-4 overflow-hidden min-h-[180px]">
+        <div className="relative px-0 pt-4 mb-4">
+          <div className="relative rounded-2xl bg-gradient-to-b from-[#a9062c] to-[#4e1624] backdrop-blur-sm p-4 overflow-hidden min-h-[180px] border border-white/10 shadow-lg">
             <div className="flex items-end justify-center gap-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex-1 flex flex-col items-center">
@@ -33,8 +33,8 @@ export const LeaderboardContent = ({
           </div>
         </div>
       ) : topThree.length > 0 ? (
-        <div className="relative px-4 pt-4 pb-8 mb-4">
-          <div className="relative rounded-2xl bg-linear-to-br from-[#8C5BFF] via-[#6D40C6] to-[#E91E63] p-4 overflow-hidden">
+        <div className="relative px-0 pt-4 mb-4">
+          <div className="relative rounded-2xl bg-gradient-to-b from-[#a9062c] to-[#4e1624] backdrop-blur-sm p-4 overflow-hidden border border-white/10 shadow-lg">
             {/* Background pattern */}
             <div className="absolute opacity-10">
               <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full blur-3xl"></div>
@@ -60,24 +60,24 @@ export const LeaderboardContent = ({
       ) : null}
 
       {/* Leaderboard list (ranks 4+) */}
-      <div className="px-4 py-2">
+      <div className="px-0 py-2">
         {isLoading ? (
-          <div className="space-y-3">
+          <div className="space-y-1">
             {Array.from({ length: 7 }).map((_, index) => (
-              <div key={index} className="flex items-center justify-between rounded-lg border border-white/5 bg-[#120F23]/60 px-4 py-3">
+              <div key={index} className="flex items-center justify-between rounded-lg border border-white/10 bg-[#0b0a0a]/50 px-4 py-3 backdrop-blur-sm">
                 <div className="flex items-center gap-3 flex-1">
-                  <Skeleton className="h-10 w-10 rounded-full bg-[#1A1630]" />
+                  <Skeleton className="h-10 w-10 rounded-full bg-white/10" />
                   <div className="flex-1">
-                    <Skeleton className="h-4 w-32 bg-[#1A1630] mb-2" />
-                    <Skeleton className="h-3 w-24 bg-[#1A1630]" />
+                    <Skeleton className="h-4 w-32 bg-white/10 mb-2" />
+                    <Skeleton className="h-3 w-24 bg-white/10" />
                   </div>
                 </div>
-                <Skeleton className="h-5 w-20 bg-[#1A1630]" />
+                <Skeleton className="h-5 w-20 bg-white/10" />
               </div>
             ))}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-1">
             {restOfLeaderboard.map((entry) => (
               <LeaderboardItem key={entry.rank} entry={entry} />
             ))}

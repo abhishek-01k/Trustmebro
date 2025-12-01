@@ -1,100 +1,79 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LeaderboardEntry } from "@/types/global";
 import { LeaderboardContent } from "./components/leaderboard-content";
 import { UserRankSection } from "./components/user-rank-section";
+import { LeaderboardResponse } from "@/queries/leaderboard/use-leaderboard";
 
-// Generate random avatar URLs (using placeholder service)
-const getAvatarUrl = () => {
-  return `https://assets.coingecko.com/coins/images/38927/standard/monad.png?1764042736`;
-};
+interface LeaderboardScreenProps {
+  leaderboardData: LeaderboardResponse | undefined;
+  isLoading: boolean;
+  error: Error | null;
+}
 
-// Dummy data
-const generateDummyData = (): LeaderboardEntry[] => {
-  const usernames = [
-    "Sophie Reynolds",
-    "Finn Carter",
-    "Iris Green",
-    "Ava Elizabeth Turner",
-    "Leo Harrison",
-    "Rowan Elijah",
-    "Mia Sophia Bennett",
-    "William Turner",
-    "Ruby Claire",
-    "Silas Gabriel Ford",
-    "CryptoKing",
-    "MoonWalker",
-    "DiamondHands",
-    "WhaleHunter",
-    "BullRunner",
-    "HodlMaster",
-    "TradeGuru",
-    "ProfitSeeker",
-    "LuckyTrader",
-    "MarketMaker",
-  ];
+const LeaderboardSection = ({ 
+  leaderboardData, 
+  isLoading, 
+  error 
+}: LeaderboardScreenProps) => {
+  // Transform API data to component format
+  const transformedData = useMemo((): LeaderboardEntry[] => {
+    if (!leaderboardData?.leaderboard) return [];
+    
+    return leaderboardData.leaderboard.map((entry) => ({
+      rank: entry.rank,
+      username: entry.username,
+      profit: entry.pnl,
+      avatar: entry.pfp || undefined,
+      userId: entry.fid.toString(),
+    }));
+  }, [leaderboardData]);
 
-  return usernames.map((username, index) => ({
-    rank: index + 1,
-    username,
-    profit: Math.floor(Math.random() * 100) + 500,
-    avatar: getAvatarUrl(),
-    userId: `100${60000 + index}`,
-  }));
-};
+  // Transform current user data
+  const currentUser = useMemo((): LeaderboardEntry | null => {
+    if (!leaderboardData?.currentUser) return null;
+    
+    const user = leaderboardData.currentUser;
+    return {
+      rank: user.rank,
+      username: user.username,
+      profit: user.pnl,
+      avatar: user.pfp || undefined,
+      userId: user.fid.toString(),
+    };
+  }, [leaderboardData]);
 
-// Current user data (dummy)
-const currentUser: LeaderboardEntry = {
-  rank: 42,
-  username: "You",
-  profit: 125,
-  avatar: getAvatarUrl(),
-  userId: "10066542",
-};
-
-const LeaderboardSection = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>(
-    []
-  );
-
-  useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      const data = generateDummyData().sort((a, b) => b.profit - a.profit);
-      // Reassign ranks after sorting
-      const rankedData = data.map((entry, index) => ({
-        ...entry,
-        rank: index + 1,
-      }));
-      setLeaderboardData(rankedData);
-      setIsLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const topThree = leaderboardData.slice(0, 3);
-  const restOfLeaderboard = leaderboardData.slice(3);
+  const topThree = transformedData.slice(0, 3);
+  const restOfLeaderboard = transformedData.slice(3);
 
   return (
-    <div className="relative flex flex-col h-full w-full bg-[#08070F]">
-      <div className="shrink-0 px-4 pt-6 pb-4 z-10 bg-[#08070F]">
-        <h2 className="text-2xl font-bold text-white mb-1">Leaderboard</h2>
-        <p className="text-sm text-white/60">Top traders this week</p>
-      </div>
-
+    <div 
+      className="relative flex flex-col h-full w-full min-h-screen p-4 pb-32"
+      style={{
+        backgroundImage: 'url(/background_image.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
       <ScrollArea className="flex-1 h-0">
-        <LeaderboardContent 
-          topThree={topThree} 
-          restOfLeaderboard={restOfLeaderboard} 
-          isLoading={isLoading} 
-        />
+        {error ? (
+          <div className="px-4 py-8 text-center">
+            <p className="text-red-400 text-sm">Failed to load leaderboard</p>
+            <p className="text-white/50 text-xs mt-1">{error.message}</p>
+          </div>
+        ) : (
+          <LeaderboardContent 
+            topThree={topThree} 
+            restOfLeaderboard={restOfLeaderboard} 
+            isLoading={isLoading} 
+          />
+        )}
       </ScrollArea>
 
-      {!isLoading && <UserRankSection currentUser={currentUser} />}
+      {!isLoading && currentUser && <UserRankSection currentUser={currentUser} />}
     </div>
   );
 };

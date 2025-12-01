@@ -9,10 +9,10 @@ const LeaderboardItem = ({ entry, isCurrentUser = false }: { entry: LeaderboardE
     return (
       <div
         className={cn(
-          "flex items-center justify-between rounded-lg border bg-[#120F23]/60 px-4 py-3 transition-colors",
+          "flex items-center justify-between px-4 py-3 transition-all duration-300 ease-in-out",
           isCurrentUser
-            ? "bg-[#1A1630]/80 border-[#8C5BFF]/40"
-            : "border-white/5 hover:border-white/10 hover:bg-[#120F23]/80"
+            ? "rounded-lg bg-gradient-to-b from-[#a9062c] to-[#4e1624] hover:from-[#8d0524] hover:to-[#3d1119] shadow-lg"
+            : "rounded-lg border backdrop-blur-sm bg-[#0b0a0a]/50 border-white/10 hover:border-white/20 hover:bg-[#0b0a0a]/70"
         )}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -20,17 +20,23 @@ const LeaderboardItem = ({ entry, isCurrentUser = false }: { entry: LeaderboardE
           <div
             className={cn(
               "shrink-0 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm",
-              isTopThree
-                ? "bg-[#8C5BFF]/20 text-[#8C5BFF]"
-                : "bg-[#1A1630] text-white/80",
-              isCurrentUser && "bg-[#8C5BFF]/20 text-[#8C5BFF]"
+              isTopThree && !isCurrentUser
+                ? "bg-[#8C5BFF]/30 text-[#8C5BFF] backdrop-blur-sm"
+                : isCurrentUser
+                ? "bg-white/20 text-white"
+                : "bg-white/10 text-white/80 backdrop-blur-sm"
             )}
           >
             {entry.rank}
           </div>
 
           {/* Profile Picture */}
-          <div className="relative shrink-0 w-10 h-10 rounded-full border border-white/10 overflow-hidden bg-[#1A1630]">
+          <div className={cn(
+            "relative shrink-0 w-10 h-10 rounded-full border overflow-hidden",
+            isCurrentUser
+              ? "border-white/20 bg-white/20"
+              : "border-white/10 bg-white/10 backdrop-blur-sm"
+          )}>
             {entry.avatar ? (
               <Image 
                 src={entry.avatar} 
@@ -50,14 +56,19 @@ const LeaderboardItem = ({ entry, isCurrentUser = false }: { entry: LeaderboardE
           <div className="flex-1 min-w-0">
             <p
               className={cn(
-                "font-medium truncate text-sm",
-                isCurrentUser ? "text-[#8C5BFF]" : "text-white"
+                "truncate text-sm",
+                isCurrentUser 
+                  ? "text-white font-semibold uppercase tracking-wide" 
+                  : "text-white font-medium"
               )}
             >
               {entry.username}
             </p>
             {entry.userId && (
-              <p className="text-xs text-white/50 truncate">
+              <p className={cn(
+                "text-xs truncate",
+                isCurrentUser ? "text-white/70" : "text-white/50"
+              )}>
                 ID: {entry.userId}
               </p>
             )}
