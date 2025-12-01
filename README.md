@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trust Me Bro ⭕️🔺🟥
 
-## Getting Started
+A thrilling blockchain-based survival game inspired by Squid Game's glass tile challenge. Test your luck across 20 rounds of increasingly difficult tile selections where one wrong move means losing everything!
 
-First, run the development server:
+## 🎯 Game Overview
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+**Trust Me Bro** is a high-stakes betting game where players must survive 20 rounds of tile selection challenges. Each round presents a set of tiles with one deadly trap - choose wisely to multiply your bet and advance to the next round!
+
+## 🎲 How It Works
+
+### Game Mechanics
+
+1. **Place Your Bet**: Start by wagering your desired amount
+2. **Navigate 20 Rounds**: Each round presents 2-5 tiles to choose from
+3. **Avoid the Death Tile**: One tile in each round is the "death tile" - step on it and you lose everything
+4. **Multiply Your Winnings**: Successfully completing each round multiplies your money
+5. **Cash Out or Continue**: After each successful round, decide whether to take your winnings or risk it for more
+
+### Round Progression
+
+- Each of the 20 rounds randomly generates between 2-5 tiles
+- The number of tiles is completely random for each round
+- Every round has exactly one death tile among the generated tiles
+
+## 📊 Multiplier Formula
+
+The payout multiplier for each round is calculated using the formula:
+
+```
+Multiplier = 1 / (1 - 1/n)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Where `n` = number of tiles in that round
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Example Calculations
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Tiles | Survival Chance | Multiplier | Calculation |
+|-------|----------------|------------|-------------|
+| 2 | 50% | **2.00x** | 1 / (1 - 1/2) = 2.00 |
+| 3 | 66.67% | **1.50x** | 1 / (1 - 1/3) = 1.50 |
+| 4 | 75% | **1.33x** | 1 / (1 - 1/4) = 1.33 |
+| 5 | 80% | **1.25x** | 1 / (1 - 1/5) = 1.25 |
 
-## Learn More
+### Total Potential Winnings
 
-To learn more about Next.js, take a look at the following resources:
+Complete all 20 rounds successfully to achieve maximum multiplier potential!
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Example**: $100 bet completing all rounds with varying tile counts could yield substantial returns based on the cumulative multiplier effect.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🚀 Features
 
-## Deploy on Vercel
+- 🎰 Provably fair randomization
+- 💰 Real-time multiplier tracking
+- 📈 Progressive difficulty system
+- 🏆 Leaderboard system
+- 💸 Instant payouts
+- 🔒 Secure blockchain transactions
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🛠️ Tech Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Smart Contracts**: Solidity
+- **Frontend**: React.js / Next.js
+- **Blockchain**: Ethereum / Polygon
+- **Web3 Integration**: ethers.js / wagmi
+
+## 📝 Smart Contract Functions
+
+```solidity
+// Place initial bet and start game
+function startGame(uint256 betAmount) external payable
+
+// Select a tile in current round
+function selectTile(uint8 tileIndex) external
+
+// Cash out current winnings
+function cashOut() external
+
+// Get current game state
+function getGameState() external view returns (GameState)
+```
+
+## 🎮 Game States
+
+- **IDLE**: No active game
+- **IN_PROGRESS**: Game currently running
+- **WON**: Successfully completed all rounds
+- **LOST**: Hit a death tile
+- **CASHED_OUT**: Player withdrew winnings early
+
+## ⚠️ Risk Warning
+
+This is a game of chance. The odds decrease as you progress through rounds. Only bet what you can afford to lose. The house edge ensures long-term profitability for the protocol.
+
+### Survival Probability
+
+- Surviving 1 round with 2 tiles: 50%
+- Surviving 10 rounds (avg 3 tiles): ~1.73%
+- Surviving all 20 rounds: **Extremely low probability**
+
+## 📄 License
+
+MIT License - see LICENSE file for details
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check the issues page.
+
+## 📞 Contact
+
+Created by [@abhishek-01k](https://github.com/abhishek-01k)
+
+---
+
+**Disclaimer**: This game involves real money wagering. Please gamble responsibly and only with funds you can afford to lose. Must be 18+ to play.
+
+🎲 *Trust me bro, you'll make it to round 20... probably not.* 🎲
