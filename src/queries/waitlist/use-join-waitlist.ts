@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { usePrivy } from "@privy-io/react-auth";
+// import { usePrivy } from "@privy-io/react-auth"; // Unused
 
 export interface JoinWaitlistPayload {
   farcasterFid: number;
@@ -30,7 +30,6 @@ interface ApiError {
  */
 export const useJoinWaitlist = () => {
   const queryClient = useQueryClient();
-  const { user } = usePrivy();
 
   return useMutation<JoinWaitlistResponse, Error, JoinWaitlistPayload>({
     mutationFn: async (payload: JoinWaitlistPayload) => {
