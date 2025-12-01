@@ -21,11 +21,29 @@ const gameOfSquids = localFont({
   weight: "400",
 });
 
+const appUrl = process.env.NEXT_PUBLIC_URL || "https://trustmebro-tan.vercel.app";
+
 export const metadata: Metadata = {
   title: "Trust Me Bro",
   description: "Bet, Pick and win based on your luck",
   icons: {
     icon: "/trustmebro_logo.png",
+  },
+  other: {
+    "fc:frame": JSON.stringify({
+      version: "next",
+      imageUrl: `${appUrl}/trustmebro_logo.png`,
+      button: {
+        title: "Join waitlist ⭕️",
+        action: {
+          type: "launch_frame",
+          name: "Trust me bro",
+          url: appUrl,
+          splashImageUrl: `${appUrl}/trustmebro_logo.png`,
+          splashBackgroundColor: "#000000",
+        },
+      },
+    }),
   },
 };
 
