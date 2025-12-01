@@ -12,8 +12,8 @@ export async function GET() {
     miniapp: {
       name: "Trust Me Bro",
       description: "A squid game: trust a tile, beat the odds, escape the death tile",
-      version: "0.1.0",
-      tags: ["games", "warpcast", "community", "gambling", "entertainment", "crypto"],
+      version: "0.0.1",
+      tags: ["games", "warpcast", "community", "entertainment", "friends", "entertainment"],
       iconUrl: `${appUrl}/trustmebro_logo.png`,
       imageUrl: `${appUrl}/trustmebro_logo.png`,
       ogTitle: "Trust Me Bro",
