@@ -12,7 +12,7 @@ contract TrustMeBroNFTTest is Test {
     address public user2 = address(0x2);
     address public unauthorized = address(0x3);
 
-    string public constant BASE_URI = "https://trustmebro-tan.vercel.app/api/og/waitlist?pos=";
+    string public constant BASE_URI = "https://trustmebro-tan.vercel.app/api/nft/";
 
     // Events for testing
     event NFTMinted(
@@ -200,11 +200,11 @@ contract TrustMeBroNFTTest is Test {
         vm.stopPrank();
 
         // Token ID 1 should map to position 0
-        assertEq(nft.tokenURI(1), "https://trustmebro-tan.vercel.app/api/og/waitlist?pos=0");
+        assertEq(nft.tokenURI(1), "https://trustmebro-tan.vercel.app/api/nft/0");
         // Token ID 2 should map to position 1
-        assertEq(nft.tokenURI(2), "https://trustmebro-tan.vercel.app/api/og/waitlist?pos=1");
+        assertEq(nft.tokenURI(2), "https://trustmebro-tan.vercel.app/api/nft/1");
         // Token ID 3 should map to position 2
-        assertEq(nft.tokenURI(3), "https://trustmebro-tan.vercel.app/api/og/waitlist?pos=2");
+        assertEq(nft.tokenURI(3), "https://trustmebro-tan.vercel.app/api/nft/2");
     }
 
     function test_TokenURI_NonexistentToken_Reverts() public {

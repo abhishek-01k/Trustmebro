@@ -47,7 +47,7 @@ async function main() {
   }
 
   // Get configuration from environment
-  const baseURI = process.env.BASE_URI || "https://trustmebro-tan.vercel.app/api/og/waitlist?pos=";
+  const baseURI = process.env.BASE_URI || "https://trustmebro-tan.vercel.app/api/nft/";
 
   console.log(`✓ Base URI: ${baseURI}\n`);
 
@@ -159,10 +159,11 @@ async function main() {
     console.log(`Contract on Explorer: ${chain.blockExplorers.default.url}/address/${contractAddress}`);
   }
   console.log("\n✅ Deployment complete!");
-  console.log("\nExample Token URIs:");
-  console.log(`  Token ID 1 -> ${baseURI}0`);
-  console.log(`  Token ID 2 -> ${baseURI}1`);
-  console.log(`  Token ID 3 -> ${baseURI}2`);
+  console.log("\nExample Token Metadata:");
+  console.log(`  Token ID 1 -> ${baseURI}0 (Position 0)`);
+  console.log(`  Token ID 2 -> ${baseURI}1 (Position 1)`);
+  console.log(`  Token ID 3 -> ${baseURI}2 (Position 2)`);
+  console.log("\nNote: Each metadata URL returns JSON with the NFT image and attributes.");
 }
 
 main().catch((error) => {
