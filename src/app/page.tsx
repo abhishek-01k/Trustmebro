@@ -1,16 +1,24 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { sdk as miniappSdk } from "@farcaster/miniapp-sdk";
 import { useLoginToMiniApp } from "@privy-io/react-auth/farcaster";
 import { usePrivy } from "@privy-io/react-auth";
 import { Button } from "../components/ui/button";
 import LoadingScreen from "../components/loading-screen";
-import { BodySection, BottomNavigation, HeaderSection } from "../components/layout";
+import {
+  BodySection,
+  BottomNavigation,
+  HeaderSection,
+} from "../components/layout";
+import { useRegisterUser } from "@/queries/user";
 
 export default function Home() {
-  const { ready, authenticated, login } = usePrivy();
+  const { ready, authenticated, login, user } = usePrivy();
   const { initLoginToMiniApp, loginToMiniApp } = useLoginToMiniApp();
+  const { mutate: registerUser } = useRegisterUser();
+
+  const registeredUserIdRef = useRef<string | null>(null);
 
   const handleMiniAppLogin = useCallback(async () => {
     if (ready && !authenticated) {
@@ -32,10 +40,53 @@ export default function Home() {
     handleMiniAppLogin();
   }, [handleMiniAppLogin]);
 
+  useEffect(() => {
+    if (user && authenticated && registeredUserIdRef.current !== user.id) {
+      registeredUserIdRef.current = user.id;
+
+      const attemptRegistration = async () => {
+        try {
+          if (!user.farcaster?.fid) {
+            console.warn(
+              "User does not have Farcaster FID, skipping registration"
+            );
+            return;
+          }
+
+          const registrationData = {
+            farcasterFid: user.farcaster.fid,
+            username: user.farcaster.username || `user_${user.farcaster.fid}`,
+            avatar: user.farcaster.pfp,
+            walletAddress: user.wallet?.address,
+          };
+
+          registerUser(registrationData, {
+            onSuccess: () => {
+              console.log("User registered successfully in backend");
+            },
+            onError: (error) => {
+              console.error("User registration failed:", error);
+              registeredUserIdRef.current = null;
+            },
+          });
+        } catch (error) {
+          console.error("User registration failed:", error);
+          registeredUserIdRef.current = null;
+        }
+      };
+
+      attemptRegistration();
+    }
+  }, [user, authenticated, registerUser]);
+
+  useEffect(() => {
+    if (!authenticated) {
+      registeredUserIdRef.current = null;
+    }
+  }, [authenticated]);
+
   if (!ready) {
-    return (
-      <LoadingScreen/>
-    );
+    return <LoadingScreen />;
   }
 
   if (!authenticated) {
@@ -48,9 +99,9 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <HeaderSection/>
-        <BodySection/>
-        <BottomNavigation/>
+      <HeaderSection />
+      <BodySection />
+      <BottomNavigation />
     </div>
   );
 }

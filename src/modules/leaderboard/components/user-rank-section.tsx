@@ -9,10 +9,7 @@ interface UserRankSectionProps {
 export const UserRankSection = ({ currentUser }: UserRankSectionProps) => {
   return (
     <div 
-      className="shrink-0 px-4 pt-4 border-t border-white/5 bg-[#08070F]"
-      style={{ 
-        paddingBottom: `calc(1rem + max(1rem, env(safe-area-inset-bottom)) + 60px)`
-      }}
+      className="shrink-0 px-0 pt-4 border-t border-white/10 backdrop-blur-sm pb-4"
     >
       <LeaderboardItem entry={currentUser} isCurrentUser={true} />
     </div>
