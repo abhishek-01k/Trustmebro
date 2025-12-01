@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   other: {
     "fc:frame": JSON.stringify({
       version: "next",
-      imageUrl: `${appUrl}/trustmebro_logo.png`,
+      imageUrl: `${appUrl}/trustmebro_splash.png`,
       button: {
         title: "Join waitlist ⭕️",
         action: {
