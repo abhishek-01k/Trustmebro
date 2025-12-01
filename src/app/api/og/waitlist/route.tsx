@@ -4,13 +4,31 @@ import { NextRequest } from 'next/server';
 export const runtime = 'edge';
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
+  const url = new URL(request.url);
+  const { searchParams, origin } = url;
   const position = searchParams.get('pos') || '?';
-  const total = searchParams.get('total') || '?';
 
-  // Load the custom Squid Game font from production URL
-  const fontBaseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://trustmebro-tan.vercel.app';
-  const fontData = await fetch(`${fontBaseUrl}/font/GameOfSquids.ttf`).then((res) => res.arrayBuffer());
+  // Use origin for same-domain requests, fallback to production URL
+  const baseUrl = origin.includes('localhost')
+    ? origin
+    : (process.env.NEXT_PUBLIC_BASE_URL || 'https://save-dome-distinction-industry.trycloudflare.com');
+
+  // Fetch total from the database via count API
+  let total = '?';
+  try {
+    const response = await fetch(`${baseUrl}/api/waitlist/count`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (response.ok) {
+      const data = await response.json();
+      total = data.data?.count?.toString() || '?';
+    }
+  } catch {
+    // Keep total as '?' on error
+  }
+
+  // Load the custom Squid Game font
+  const fontData = await fetch(`${baseUrl}/font/GameOfSquids.ttf`).then((res) => res.arrayBuffer());
 
   return new ImageResponse(
     (

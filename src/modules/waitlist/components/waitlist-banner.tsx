@@ -32,12 +32,12 @@ const WaitlistBanner = () => {
     }
 
     try {
-      // const castText = `I'm #${waitlistStatus.position} on the TrustMeBro waitlist! Join me and ${waitlistStatus.totalSignups} others for early access 🎮`;
-      const castText = `⭕️ TrustmeBro waitlist: ${waitlistStatus.totalSignups} degens and counting. Position #${waitlistStatus.position} locked. Trust me bro!`;
+      const sharePageUrl = `https://save-dome-distinction-industry.trycloudflare.com/waitlist/share?pos=${waitlistStatus.position}`;
+      const castText = `🔴 Just minted my Early Access Pass for TrustMeBro!\n\nPosition #${waitlistStatus.position} of ${waitlistStatus.totalSignups} degens.`;
 
       await sdk.actions.composeCast({
         text: castText,
-        embeds: [`https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro`],
+        embeds: [sharePageUrl],
       });
     } catch (error) {
       console.error("Failed to cast to Farcaster:", error);

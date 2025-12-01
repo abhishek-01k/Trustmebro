@@ -8,18 +8,17 @@ type Props = {
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const params = await searchParams;
   const position = params.pos || '?';
-  const total = params.total || '?';
 
-  // Base URL for OG images (Vercel domain)
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://trustmebro-tan.vercel.app';
+  // Base URL for OG images
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://save-dome-distinction-industry.trycloudflare.com';
   // App URL for miniapp link
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro';
 
-  // Dynamic OG image with position
-  const ogImageUrl = `${baseUrl}/api/og/waitlist?pos=${position}&total=${total}`;
+  // Dynamic OG image with position only (total is fetched from DB by the OG route)
+  const ogImageUrl = `${baseUrl}/api/og/waitlist?pos=${position}`;
 
   const title = `Position #${position} on TrustMeBro Waitlist`;
-  const description = `${total} degens waiting. Trust the tap. 🔴🔺🟥`;
+  const description = `Join the TrustMeBro waitlist. Trust the tap. 🔴🔺🟥`;
 
   return {
     title,
@@ -36,11 +35,11 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
       images: [ogImageUrl],
     },
     other: {
-      // Farcaster Frame meta tags
+      // Farcaster Frame meta tags - using launch_frame to open mini app directly
       'fc:frame': 'vNext',
       'fc:frame:image': ogImageUrl,
       'fc:frame:image:aspect_ratio': '1.91:1',
-      'fc:frame:button:1': 'Join Waitlist 🔴',
+      'fc:frame:button:1': 'Mint Your Pass 🔴',
       'fc:frame:button:1:action': 'launch_frame',
       'fc:frame:button:1:target': appUrl,
     },

@@ -56,19 +56,15 @@ export async function POST(request: NextRequest) {
 
     const totalSignups = await prisma.waitlist.count();
 
-    // Generate cast text for sharing (minimal - let the card speak)
-    const castText = `Position #${position} locked 🔴`;
+    // URLs for sharing
+    const sharePageUrl = `https://trustmebro-tan.vercel.app/waitlist/share?pos=${position}`;
+    const miniAppUrl = 'https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro';
 
-    // Base URL for OG images and share pages (Vercel domain)
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://trustmebro-tan.vercel.app';
-    // App URL for miniapp link
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro';
+    // Generate engaging cast text with mini app URL inline
+    const castText = `🔴 Just minted my Early Access Pass for TrustMeBro!\n\nPosition #${position} of ${totalSignups} degens.\n\nMint yours now 👇\n${miniAppUrl}`;
 
-    // Frame URL with user's position for dynamic OG image (must be on Vercel domain)
-    const frameUrl = `${baseUrl}/waitlist/share?pos=${position}&total=${totalSignups}&fid=${farcasterFid}`;
-
-    // Cast intent with frame embed (shows preview card, text is minimal)
-    const castIntent = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(frameUrl)}`;
+    // Cast intent with share page embed (has OG meta tags for preview)
+    const castIntent = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(sharePageUrl)}`;
 
     return apiSuccess({
       position,
@@ -77,7 +73,8 @@ export async function POST(request: NextRequest) {
       share: {
         castText,
         castIntent,
-        frameUrl,
+        sharePageUrl,
+        miniAppUrl,
       },
     });
   } catch (error) {
@@ -133,11 +130,11 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Generate share data (minimal - let the card speak)
-    const castText = `Position #${position} locked 🔴`;
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://trustmebro-tan.vercel.app';
-    const frameUrl = `${baseUrl}/waitlist/share?pos=${position}&total=${totalSignups}&fid=${farcasterFid}`;
-    const castIntent = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(frameUrl)}`;
+    // Generate engaging share data
+    const sharePageUrl = `https://trustmebro-tan.vercel.app/waitlist/share?pos=${position}`;
+    const miniAppUrl = 'https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro';
+    const castText = `🔴 Just minted my Early Access Pass for TrustMeBro!\n\nPosition #${position} of ${totalSignups} degens.\n\nMint yours now 👇\n${miniAppUrl}`;
+    const castIntent = `https://warpcast.com/~/compose?text=${encodeURIComponent(castText)}&embeds[]=${encodeURIComponent(sharePageUrl)}`;
 
     return apiSuccess({
       onWaitlist: true,
@@ -146,7 +143,8 @@ export async function GET(request: NextRequest) {
       share: {
         castText,
         castIntent,
-        frameUrl,
+        sharePageUrl,
+        miniAppUrl,
       },
     });
   } catch (error) {
