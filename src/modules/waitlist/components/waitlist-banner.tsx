@@ -58,13 +58,14 @@ const WaitlistBanner = () => {
       // Get the wallet provider directly from Privy
       const provider = await wallet.getEthereumProvider()
 
-      // Send mint transaction
+      // Send mint transaction with 0.0005 ETH
       const txHash = await provider.request({
         method: 'eth_sendTransaction',
         params: [{
           from: wallet.address as `0x${string}`,
           to: NFT_CONTRACT_ADDRESS,
           data: '0x1249c58b', // mint() function selector
+          value: '0x1C6BF52634000', // 0.0005 ETH in hex
         }],
       }) as `0x${string}`
 
@@ -172,7 +173,7 @@ const WaitlistBanner = () => {
               Join the waitlist & mint your pass
             </p>
             <p className="text-white/60 text-xs text-center">
-              Free NFT mint - you only pay gas fees
+              NFT mint - you only pay gas fees
             </p>
             {mintError && (
               <p className="text-red-400 text-xs text-center">

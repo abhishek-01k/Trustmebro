@@ -1,4 +1,4 @@
-import { createWalletClient, createPublicClient, http, decodeEventLog, type Address, type Chain } from "viem";
+import { createWalletClient, createPublicClient, http, decodeEventLog, parseEther, type Address, type Chain } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { anvil, baseSepolia } from "viem/chains";
 import { loadDeployedNFTAddress, loadNFTContractABI } from "./utils/nft-utils";
@@ -117,7 +117,7 @@ async function main() {
 
   console.log(`Name: ${name}`);
   console.log(`Symbol: ${symbol}`);
-  console.log(`Minting: FREE`);
+  console.log(`Minting: 0.0005 ETH`);
   console.log(`Total Supply: ${totalSupply}`);
   console.log(`Next Token ID: ${totalSupply + BigInt(1)}\n`);
 
@@ -142,7 +142,8 @@ async function main() {
   // Mint the NFT
   console.log("🎨 Minting NFT");
   console.log("-".repeat(50));
-  console.log(`Minting FREE NFT for ${account.address}...\n`);
+  console.log(`Minting NFT for ${account.address}...`);
+  console.log(`Price: 0.0005 ETH\n`);
 
   const mintHash = await walletClient.writeContract({
     address: nftAddress,
@@ -151,6 +152,7 @@ async function main() {
     args: [],
     account,
     chain,
+    value: parseEther("0.0005"),
   });
 
   console.log(`✓ Mint transaction: ${mintHash}`);
