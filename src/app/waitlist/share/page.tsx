@@ -10,7 +10,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const position = params.pos || '?';
 
   // Base URL for OG images
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://save-dome-distinction-industry.trycloudflare.com';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://trustmebro-tan.vercel.app';
   // App URL for miniapp link
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro';
 

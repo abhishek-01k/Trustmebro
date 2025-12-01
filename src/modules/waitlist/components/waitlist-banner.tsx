@@ -32,7 +32,7 @@ const WaitlistBanner = () => {
     }
 
     try {
-      const sharePageUrl = `https://save-dome-distinction-industry.trycloudflare.com/waitlist/share?pos=${waitlistStatus.position}`;
+      const sharePageUrl = `https://trustmebro-tan.vercel.app/waitlist/share?pos=${waitlistStatus.position}`;
       const castText = `🔴 Just minted my Early Access Pass for TrustMeBro!\n\nPosition #${waitlistStatus.position} of ${waitlistStatus.totalSignups} degens.`;
 
       await sdk.actions.composeCast({

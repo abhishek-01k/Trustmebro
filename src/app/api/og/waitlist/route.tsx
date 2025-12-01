@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   // Use origin for same-domain requests, fallback to production URL
   const baseUrl = origin.includes('localhost')
     ? origin
-    : (process.env.NEXT_PUBLIC_BASE_URL || 'https://save-dome-distinction-industry.trycloudflare.com');
+    : (process.env.NEXT_PUBLIC_BASE_URL || 'https://trustmebro-tan.vercel.app');
 
   // Fetch total from the database via count API
   let total = '?';
