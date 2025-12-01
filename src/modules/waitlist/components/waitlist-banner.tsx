@@ -70,7 +70,7 @@ const WaitlistBanner = () => {
                   try {
                     await sdk.actions.composeCast({
                       text: waitlistStatus.share!.castText,
-                      embeds: [waitlistStatus.share!.frameUrl],
+                      embeds: [waitlistStatus.share!.frameUrl, waitlistStatus.share!.miniAppUrl],
                     })
                   } catch (error) {
                     // Fallback to URL redirect if SDK fails

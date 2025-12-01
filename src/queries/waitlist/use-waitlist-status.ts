@@ -5,6 +5,7 @@ export interface WaitlistShareData {
   castText: string;
   castIntent: string;
   frameUrl: string;
+  miniAppUrl: string;
 }
 
 export interface WaitlistStatus {
