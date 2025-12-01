@@ -15,13 +15,6 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
       <ReactPrivyProvider
         appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID!}
         clientId={process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID!}
-        config={{
-          embeddedWallets: {
-            ethereum: {
-              createOnLogin: "all-users",
-            },
-          },
-        }}
       >
         <WagmiProvider config={wagmiConfig}>
         <MiniAppProvider>

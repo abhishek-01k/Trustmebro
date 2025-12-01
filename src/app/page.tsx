@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { sdk as miniappSdk } from "@farcaster/miniapp-sdk";
 import { useLoginToMiniApp } from "@privy-io/react-auth/farcaster";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 import LoadingScreen from "../components/loading-screen";
 import {
   BodySection,
@@ -17,6 +17,7 @@ export default function Home() {
   const { initLoginToMiniApp, loginToMiniApp } = useLoginToMiniApp();
   const { mutate: registerUser } = useRegisterUser();
   const [isMiniApp, setIsMiniApp] = useState(false);
+const { wallets } = useWallets();
 
   const registeredUserIdRef = useRef<string | null>(null);
 
@@ -57,7 +58,7 @@ export default function Home() {
             farcasterFid: user.farcaster.fid,
             username: user.farcaster.username || `user_${user.farcaster.fid}`,
             avatar: user.farcaster.pfp,
-            walletAddress: user.wallet?.address,
+            walletAddress: wallets[0]?.address,
           };
 
           registerUser(registrationData, {

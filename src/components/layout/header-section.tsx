@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useReadContract } from "wagmi";
 import { base } from "wagmi/chains";
 import { USDC_ADDRESS, USDC_DECIMALS, USDC_ABI } from "@/constants";
@@ -7,9 +7,9 @@ import { formatUnits } from "viem";
 import {  Wallet } from "lucide-react";
 
 const HeaderSection = () => {
-  const { user } = usePrivy();
+  const { wallets } = useWallets();
 
-  const walletAddress = user?.wallet?.address as `0x${string}` | undefined;
+  const walletAddress = wallets[0]?.address as `0x${string}` | undefined;
 
   const { data: balance, isLoading } = useReadContract({
     address: USDC_ADDRESS,
@@ -17,9 +17,6 @@ const HeaderSection = () => {
     functionName: "balanceOf",
     args: walletAddress ? [walletAddress] : undefined,
     chainId: base.id,
-    query: {
-      enabled: !!walletAddress,
-    },
   });
 
   const usdcBalance = useMemo(() => {

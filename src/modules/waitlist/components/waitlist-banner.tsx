@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useWaitlistStatus, useJoinWaitlist } from '@/queries/waitlist'
-import { usePrivy } from '@privy-io/react-auth'
+import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { sdk } from '@farcaster/miniapp-sdk'
 import WaitlistBannerSkeleton from './waitlist-banner-skeleton'
 import { useWriteContract, usePublicClient, useReadContract } from 'wagmi'
@@ -11,6 +11,7 @@ import { parseEventLogs } from 'viem'
 const WaitlistBanner = () => {
   const { user } = usePrivy()
   const { data: waitlistStatus, isLoading, refetch: refetchWaitlistStatus } = useWaitlistStatus()
+  const { wallets } = useWallets();
   const joinWaitlist = useJoinWaitlist()
   const [isMintingNFT, setIsMintingNFT] = useState(false)
   const [mintError, setMintError] = useState<string | null>(null)
@@ -23,14 +24,14 @@ const WaitlistBanner = () => {
     address: NFT_CONTRACT_ADDRESS,
     abi: TRUST_ME_BRO_NFT_ABI,
     functionName: 'hasNft',
-    args: user?.wallet?.address ? [user.wallet.address as `0x${string}`] : undefined,
+    args: wallets[0]?.address ? [wallets[0]?.address as `0x${string}`] : undefined,
     query: {
-      enabled: !!user?.wallet?.address && !!NFT_CONTRACT_ADDRESS,
+      enabled: !!wallets[0]?.address && !!NFT_CONTRACT_ADDRESS,
     },
   })
 
   const handleJoinWaitlist = async () => {
-    if (!user?.farcaster?.fid || !user?.wallet?.address) {
+    if (!user?.farcaster?.fid || !wallets[0]?.address) {
       return
     }
 
@@ -52,7 +53,7 @@ const WaitlistBanner = () => {
             username: user.farcaster!.username || '',
             displayName: user.farcaster!.displayName || undefined,
             avatar: user.farcaster!.pfp || undefined,
-            walletAddress: user.wallet!.address || undefined,
+            walletAddress: wallets[0]?.address || undefined,
           },
           {
             onSuccess: () => resolve(),
@@ -180,7 +181,7 @@ const WaitlistBanner = () => {
             )}
             <Button
               onClick={handleJoinWaitlist}
-              disabled={isLoadingState || !user?.farcaster || !user?.wallet}
+              disabled={isLoadingState || !user?.farcaster || !wallets[0]?.address}
               className="text-xl w-full h-12 rounded-full font-game-of-squids bg-gradient-to-b from-[#a9062c] to-[#4e1624] hover:from-[#8d0524] hover:to-[#3d1119] text-white font-semibold uppercase tracking-wide shadow-lg transition-all disabled:opacity-50"
             >
               {isMintingNFT ? 'Minting NFT...' : isLoadingState ? 'Joining...' : 'Join & Mint NFT'}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useMiniAppContext } from "@/context/mini-app-context";
 import { UserRegistrationPayload } from "@/types/global";
 
@@ -15,6 +15,7 @@ interface UseUserRegistrationResult {
 
 export function useUserRegistration(): UseUserRegistrationResult {
   const { authenticated, user: privyUser } = usePrivy();
+  const { wallets } = useWallets();
   const miniAppContext = useMiniAppContext();
 
   const [isRegistered, setIsRegistered] = useState(false);
@@ -31,7 +32,7 @@ export function useUserRegistration(): UseUserRegistrationResult {
     const farcasterUser = miniAppContext.user;
 
     // Get wallet address from Privy if available
-    const walletAddress = privyUser?.wallet?.address || undefined;
+    const walletAddress = wallets[0]?.address as `0x${string}` | undefined;
 
     return {
       farcasterFid: farcasterUser.fid,
