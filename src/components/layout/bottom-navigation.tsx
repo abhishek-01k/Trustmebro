@@ -52,7 +52,7 @@ const BottomNavigation = () => {
               key={item.id}
               onClick={() => handleNavClick(item.id)}
               className={cn(
-                "relative flex items-center justify-center gap-2 rounded-full transition-all duration-300 ease-in-out",
+                "relative font-game-of-squids flex items-center justify-center gap-2 rounded-full transition-all duration-300 ease-in-out",
                 "active:scale-95",
                 isActive 
                   ? "px-4 py-2 text-white bg-gradient-to-b from-[#a9062c] to-[#4e1624] hover:from-[#8d0524] hover:to-[#3d1119] font-semibold uppercase tracking-wide shadow-lg"

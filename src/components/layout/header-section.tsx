@@ -7,9 +7,7 @@ import { formatUnits } from "viem";
 import {  Wallet } from "lucide-react";
 
 const HeaderSection = () => {
-  const { user,logout } = usePrivy();
-
-  console.log("User", user);
+  const { user } = usePrivy();
 
   const walletAddress = user?.wallet?.address as `0x${string}` | undefined;
 
