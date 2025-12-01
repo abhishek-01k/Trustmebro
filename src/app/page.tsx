@@ -4,18 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { sdk as miniappSdk } from "@farcaster/miniapp-sdk";
 import { useLoginToMiniApp } from "@privy-io/react-auth/farcaster";
 import { usePrivy } from "@privy-io/react-auth";
-import { Button } from "../components/ui/button";
 import LoadingScreen from "../components/loading-screen";
 import {
   BodySection,
-  BottomNavigation,
   HeaderSection,
 } from "../components/layout";
 import { useRegisterUser } from "@/queries/user";
 import DesktopLayout from "@/components/desktop-layout";
 
 export default function Home() {
-  const { ready, authenticated, login, user } = usePrivy();
+  const { ready, authenticated, user } = usePrivy(); // Removed unused 'login'
   const { initLoginToMiniApp, loginToMiniApp } = useLoginToMiniApp();
   const { mutate: registerUser } = useRegisterUser();
   const [isMiniApp, setIsMiniApp] = useState(false);

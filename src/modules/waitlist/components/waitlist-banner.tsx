@@ -1,51 +1,133 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { useWaitlistStatus, useJoinWaitlist } from '@/queries/waitlist'
 import { usePrivy } from '@privy-io/react-auth'
 import { sdk } from '@farcaster/miniapp-sdk'
 import WaitlistBannerSkeleton from './waitlist-banner-skeleton'
+import { useWriteContract, usePublicClient, useReadContract } from 'wagmi'
+import { NFT_CONTRACT_ADDRESS, TRUST_ME_BRO_NFT_ABI } from '@/constants'
+import { parseEventLogs } from 'viem'
 
 const WaitlistBanner = () => {
   const { user } = usePrivy()
-  const { data: waitlistStatus, isLoading,refetch: refetchWaitlistStatus } = useWaitlistStatus()
+  const { data: waitlistStatus, isLoading, refetch: refetchWaitlistStatus } = useWaitlistStatus()
   const joinWaitlist = useJoinWaitlist()
+  const [isMintingNFT, setIsMintingNFT] = useState(false)
+  const [mintError, setMintError] = useState<string | null>(null)
+
+  const { writeContractAsync } = useWriteContract()
+  const publicClient = usePublicClient()
+
+  // Check if user already has an NFT
+  const { data: hasNft } = useReadContract({
+    address: NFT_CONTRACT_ADDRESS,
+    abi: TRUST_ME_BRO_NFT_ABI,
+    functionName: 'hasNft',
+    args: user?.wallet?.address ? [user.wallet.address as `0x${string}`] : undefined,
+    query: {
+      enabled: !!user?.wallet?.address && !!NFT_CONTRACT_ADDRESS,
+    },
+  })
 
   const handleJoinWaitlist = async () => {
-    if (!user?.farcaster?.fid) {
+    if (!user?.farcaster?.fid || !user?.wallet?.address) {
       return
     }
 
-    joinWaitlist.mutate({
-      farcasterFid: user.farcaster.fid,
-      username: user.farcaster.username || '',
-      displayName: user.farcaster.displayName || undefined,
-      avatar: user.farcaster.pfp || undefined,
-      walletAddress: user.wallet?.address || undefined,
-    })
-    
-    refetchWaitlistStatus()
-  }
-
-  const castHandler = async () => {
-    if (!waitlistStatus?.position) {
+    // Prevent duplicate mints
+    if (hasNft) {
+      setMintError('You already have a Trust Me Bro NFT')
       return
     }
 
     try {
-      const sharePageUrl = `https://trustmebro-tan.vercel.app/waitlist/share?pos=${waitlistStatus.position}`;
-      const castText = `🔴 Just minted my Early Access Pass for TrustMeBro!\n\nPosition #${waitlistStatus.position} of ${waitlistStatus.totalSignups} degens.`;
+      setIsMintingNFT(true)
+      setMintError(null)
 
-      await sdk.actions.composeCast({
-        text: castText,
-        embeds: [sharePageUrl],
-      });
-    } catch (error) {
-      console.error("Failed to cast to Farcaster:", error);
+      // Step 1: Join waitlist in database
+      await new Promise<void>((resolve, reject) => {
+        joinWaitlist.mutate(
+          {
+            farcasterFid: user.farcaster!.fid!,
+            username: user.farcaster!.username || '',
+            displayName: user.farcaster!.displayName || undefined,
+            avatar: user.farcaster!.pfp || undefined,
+            walletAddress: user.wallet!.address || undefined,
+          },
+          {
+            onSuccess: () => resolve(),
+            onError: reject,
+          }
+        )
+      })
+
+      // Step 2: Mint NFT on-chain (user pays gas)
+      if (!NFT_CONTRACT_ADDRESS) {
+        throw new Error('NFT contract address not configured. Please set NEXT_PUBLIC_NFT_CONTRACT_ADDRESS')
+      }
+
+      const txHash = await writeContractAsync({
+        address: NFT_CONTRACT_ADDRESS,
+        abi: TRUST_ME_BRO_NFT_ABI,
+        functionName: 'mint',
+      })
+
+      // Step 3: Wait for transaction confirmation
+      if (!publicClient) {
+        throw new Error('Public client not available')
+      }
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash,
+        confirmations: 1,
+      })
+
+      if (receipt.status !== 'success') {
+        throw new Error('Transaction failed')
+      }
+
+      // Step 4: Parse the NFTMinted event to get tokenId
+      const logs = parseEventLogs({
+        abi: TRUST_ME_BRO_NFT_ABI,
+        logs: receipt.logs,
+        eventName: 'NFTMinted',
+      })
+
+      const mintedTokenId = logs[0]?.args?.tokenId
+
+      if (!mintedTokenId) {
+        throw new Error('Failed to get token ID from transaction')
+      }
+
+      // Refresh waitlist status
+      await refetchWaitlistStatus()
+    } catch (err) {
+      console.error('Error joining waitlist and minting NFT:', err)
+      setMintError(err instanceof Error ? err.message : 'Failed to mint NFT')
+    } finally {
+      setIsMintingNFT(false)
     }
   }
 
+  // Unused function - removed to fix linting
+  // const castHandler = async () => {
+  //   if (!waitlistStatus?.position) {
+  //     return
+  //   }
+  //   try {
+  //     const sharePageUrl = `https://trustmebro-tan.vercel.app/waitlist/share?pos=${waitlistStatus.position}`;
+  //     const castText = `🔴 Just minted my Early Access Pass for TrustMeBro!\n\nPosition #${waitlistStatus.position} of ${waitlistStatus.totalSignups} degens.`;
+  //     await sdk.actions.composeCast({
+  //       text: castText,
+  //       embeds: [sharePageUrl],
+  //     });
+  //   } catch {
+  //     console.error("Failed to cast to Farcaster");
+  //   }
+  // }
+
   const isOnWaitlist = waitlistStatus?.onWaitlist ?? false
-  const isLoadingState = isLoading || joinWaitlist.isPending
+  const isLoadingState = isLoading || joinWaitlist.isPending || isMintingNFT
 
   if (isLoading) {
     return <WaitlistBannerSkeleton />
@@ -86,14 +168,22 @@ const WaitlistBanner = () => {
         ) : (
           <>
             <p className="text-white text-lg font-game-of-squids text-center">
-              Join the waitlist for early access
+              Join the waitlist & mint your pass
             </p>
+            <p className="text-white/60 text-xs text-center">
+              Free NFT mint - you only pay gas fees
+            </p>
+            {mintError && (
+              <p className="text-red-400 text-xs text-center">
+                {mintError}
+              </p>
+            )}
             <Button
               onClick={handleJoinWaitlist}
-              disabled={isLoadingState || !user?.farcaster}
-              className="text-xl w-full h-12 rounded-full font-game-of-squids bg-gradient-to-b from-[#a9062c] to-[#4e1624] hover:from-[#8d0524] hover:to-[#3d1119] text-white font-semibold uppercase tracking-wide shadow-lg transition-all"
+              disabled={isLoadingState || !user?.farcaster || !user?.wallet}
+              className="text-xl w-full h-12 rounded-full font-game-of-squids bg-gradient-to-b from-[#a9062c] to-[#4e1624] hover:from-[#8d0524] hover:to-[#3d1119] text-white font-semibold uppercase tracking-wide shadow-lg transition-all disabled:opacity-50"
             >
-              {isLoadingState ? 'Joining...' : 'Join Waitlist'}
+              {isMintingNFT ? 'Minting NFT...' : isLoadingState ? 'Joining...' : 'Join & Mint NFT'}
             </Button>
           </>
         )}
