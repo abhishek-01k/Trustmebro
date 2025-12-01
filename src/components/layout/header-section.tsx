@@ -33,6 +33,7 @@ const HeaderSection = () => {
         <div className="w-4 h-4 border-2 border-[#a9062c] rounded-full"></div>
         <div className="w-0 h-0 border-l-[7px] border-l-transparent border-r-[7px] border-r-transparent border-b-12 border-b-[#a9062c]"></div>
         <div className="w-4 h-4 border-2 border-[#a9062c]"></div>
+        <p className="text-[#a9062c] text-lg font-game-of-squids">TMB</p>
       </div>
 
       <div className="flex items-center gap-3 ml-auto">
