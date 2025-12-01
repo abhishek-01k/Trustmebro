@@ -236,3 +236,26 @@ model ContractState {
   lastSyncedBlock BigInt
   updatedAt       DateTime @updatedAt
 }
+
+// ============================================
+// WAITLIST MODEL (Pre-launch signups)
+// ============================================
+model Waitlist {
+  id String @id @default(cuid())
+
+  // User info
+  farcasterFid  Int     @unique
+  username      String
+  displayName   String?
+  avatar        String?
+  walletAddress String?
+
+  // Referral tracking
+  referredBy String? // FID of referrer
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  @@index([farcasterFid])
+  @@index([createdAt])
+}
