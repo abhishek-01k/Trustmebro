@@ -47,19 +47,8 @@ async function main() {
   }
 
   // Get configuration from environment
-  const paymentTokenAddress = (process.env.PAYMENT_TOKEN_ADDRESS as Address) || undefined;
-  if (!paymentTokenAddress) {
-    console.error("❌ PAYMENT_TOKEN_ADDRESS environment variable is required");
-    console.error("   Please set PAYMENT_TOKEN_ADDRESS to the USDC token address");
-    console.error("   Example: PAYMENT_TOKEN_ADDRESS=0x... pnpm scripts:deploy-nft");
-    process.exit(1);
-  }
+  const baseURI = process.env.BASE_URI || "https://trustmebro-tan.vercel.app/api/nft/";
 
-  const mintPrice = process.env.MINT_PRICE || "10000000"; // Default: 10 USDC (6 decimals)
-  const baseURI = process.env.BASE_URI || "https://api.trustmebro.com/nft/";
-
-  console.log(`✓ Payment Token (USDC): ${paymentTokenAddress}`);
-  console.log(`✓ Mint Price: ${mintPrice} (${formatUSDC(mintPrice)} USDC)`);
   console.log(`✓ Base URI: ${baseURI}\n`);
 
   // Connect to network
@@ -107,7 +96,7 @@ async function main() {
     bytecode: bytecode as `0x${string}`,
     account,
     chain,
-    args: [paymentTokenAddress, BigInt(mintPrice), baseURI] as readonly unknown[],
+    args: [baseURI] as readonly unknown[],
   });
 
   console.log(`✓ Deployment transaction: ${hash}`);
@@ -141,20 +130,6 @@ async function main() {
     args: [],
   })) as string;
 
-  const currentMintPrice = (await publicClient.readContract({
-    address: contractAddress,
-    abi,
-    functionName: "mintPrice",
-    args: [],
-  })) as bigint;
-
-  const paymentToken = (await publicClient.readContract({
-    address: contractAddress,
-    abi,
-    functionName: "PAYMENT_TOKEN",
-    args: [],
-  })) as Address;
-
   const owner = (await publicClient.readContract({
     address: contractAddress,
     abi,
@@ -174,10 +149,9 @@ async function main() {
   console.log(`Contract Address: ${contractAddress}`);
   console.log(`Name: ${name}`);
   console.log(`Symbol: ${symbol}`);
-  console.log(`Payment Token: ${paymentToken}`);
-  console.log(`Mint Price: ${formatUSDC(currentMintPrice.toString())} USDC`);
   console.log(`Owner: ${owner}`);
   console.log(`Total Supply: ${totalSupply}`);
+  console.log(`Minting: FREE`);
   console.log(`Chain ID: ${chain.id}`);
   console.log(`Network: ${chain.name}`);
   console.log(`Explorer: ${chain.blockExplorers?.default?.url || "N/A"}`);
@@ -185,16 +159,14 @@ async function main() {
     console.log(`Contract on Explorer: ${chain.blockExplorers.default.url}/address/${contractAddress}`);
   }
   console.log("\n✅ Deployment complete!");
-}
-
-function formatUSDC(amount: string): string {
-  // USDC has 6 decimals
-  const num = Number(amount) / 1e6;
-  return num.toFixed(2);
+  console.log("\nExample Token Metadata:");
+  console.log(`  Token ID 1 -> ${baseURI}0 (Position 0)`);
+  console.log(`  Token ID 2 -> ${baseURI}1 (Position 1)`);
+  console.log(`  Token ID 3 -> ${baseURI}2 (Position 2)`);
+  console.log("\nNote: Each metadata URL returns JSON with the NFT image and attributes.");
 }
 
 main().catch((error) => {
   console.error("❌ Deployment failed:", error);
   process.exit(1);
 });
-
