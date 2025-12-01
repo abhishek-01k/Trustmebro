@@ -19,7 +19,7 @@ export async function GET() {
       ogTitle: "Trust Me Bro",
       subtitle: "Provably fair multiplier game",
       homeUrl: appUrl,
-      splashImageUrl: `${appUrl}/trustmebro_logo.png`,
+      splashImageUrl: `${appUrl}/trustmebro_splash.png`,
       splashBackgroundColor: "#000000",
       primaryCategory: "games",
     },

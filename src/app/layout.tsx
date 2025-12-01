@@ -39,7 +39,7 @@ export const metadata: Metadata = {
           type: "launch_frame",
           name: "Trust me bro",
           url: appUrl,
-          splashImageUrl: `${appUrl}/trustmebro_logo.png`,
+          splashImageUrl: `${appUrl}/trustmebro_splash.png`,
           splashBackgroundColor: "#000000",
         },
       },
