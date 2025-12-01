@@ -149,8 +149,6 @@ contract TrustMeBroNFT is ERC721, Ownable, Pausable {
             return "";
         }
         
-        // Position starts at 0, token IDs start at 1
-        uint256 position = tokenId - 1;
-        return string.concat(baseURI, position.toString());
+        return string.concat(baseURI, tokenId.toString());
     }
 }

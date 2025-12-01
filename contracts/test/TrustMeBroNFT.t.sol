@@ -172,7 +172,7 @@ contract TrustMeBroNFTTest is Test {
         vm.prank(user1);
         nft.mint();
 
-        assertEq(nft.tokenURI(1), "https://new.api.com/metadata/0");
+        assertEq(nft.tokenURI(1), "https://new.api.com/metadata/1");
     }
 
     function test_SetBaseURI_OnlyOwner() public {
@@ -200,11 +200,11 @@ contract TrustMeBroNFTTest is Test {
         vm.stopPrank();
 
         // Token ID 1 should map to position 0
-        assertEq(nft.tokenURI(1), "https://trustmebro-tan.vercel.app/api/nft/0");
+        assertEq(nft.tokenURI(1), "https://trustmebro-tan.vercel.app/api/nft/1");
         // Token ID 2 should map to position 1
-        assertEq(nft.tokenURI(2), "https://trustmebro-tan.vercel.app/api/nft/1");
+        assertEq(nft.tokenURI(2), "https://trustmebro-tan.vercel.app/api/nft/2");
         // Token ID 3 should map to position 2
-        assertEq(nft.tokenURI(3), "https://trustmebro-tan.vercel.app/api/nft/2");
+        assertEq(nft.tokenURI(3), "https://trustmebro-tan.vercel.app/api/nft/3");
     }
 
     function test_TokenURI_NonexistentToken_Reverts() public {
@@ -292,7 +292,7 @@ contract TrustMeBroNFTTest is Test {
         vm.stopPrank();
 
         // Calculate expected position (tokenId - 1)
-        uint256 expectedPosition = tokenId - 1;
+        uint256 expectedPosition = tokenId;
         string memory expectedURI = string.concat(BASE_URI, vm.toString(expectedPosition));
         
         assertEq(nft.tokenURI(tokenId), expectedURI);

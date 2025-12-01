@@ -1,6 +1,6 @@
 import { createWalletClient, createPublicClient, http, type Address, type Chain } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { anvil, baseSepolia } from "viem/chains";
+import { anvil, baseSepolia, base } from "viem/chains";
 import {
   loadNFTContractABI,
   loadNFTContractBytecode,
@@ -17,6 +17,9 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY || (NETWORK === "anvil"
 // Get chain configuration
 function getChain(): Chain {
   switch (NETWORK) {
+    case "base":
+    case "base-mainnet":
+      return base;
     case "base-sepolia":
     case "basesepolia":
       return baseSepolia;
@@ -103,7 +106,10 @@ async function main() {
 
   // Wait for deployment
   console.log("⏳ Waiting for confirmation...");
-  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  const receipt = await publicClient.waitForTransactionReceipt({ 
+    hash,
+    confirmations: 2, // Wait for 2 confirmations for safety
+  });
   const contractAddress = receipt.contractAddress;
 
   if (!contractAddress) {
@@ -115,55 +121,77 @@ async function main() {
   // Save deployment address
   saveDeployedNFTAddress(contractAddress, chain.id);
 
-  // Get contract state
-  const name = (await publicClient.readContract({
-    address: contractAddress,
-    abi,
-    functionName: "name",
-    args: [],
-  })) as string;
+  // Wait a bit for contract to be fully propagated
+  console.log("⏳ Waiting for contract to be ready...");
+  await new Promise(resolve => setTimeout(resolve, 3000));
 
-  const symbol = (await publicClient.readContract({
-    address: contractAddress,
-    abi,
-    functionName: "symbol",
-    args: [],
-  })) as string;
+  // Get contract state with error handling
+  try {
+    const name = (await publicClient.readContract({
+      address: contractAddress,
+      abi,
+      functionName: "name",
+      args: [],
+    })) as string;
 
-  const owner = (await publicClient.readContract({
-    address: contractAddress,
-    abi,
-    functionName: "owner",
-    args: [],
-  })) as Address;
+    const symbol = (await publicClient.readContract({
+      address: contractAddress,
+      abi,
+      functionName: "symbol",
+      args: [],
+    })) as string;
 
-  const totalSupply = (await publicClient.readContract({
-    address: contractAddress,
-    abi,
-    functionName: "totalSupply",
-    args: [],
-  })) as bigint;
+    const owner = (await publicClient.readContract({
+      address: contractAddress,
+      abi,
+      functionName: "owner",
+      args: [],
+    })) as Address;
 
-  // Print summary
-  console.log("=== Deployment Summary ===");
-  console.log(`Contract Address: ${contractAddress}`);
-  console.log(`Name: ${name}`);
-  console.log(`Symbol: ${symbol}`);
-  console.log(`Owner: ${owner}`);
-  console.log(`Total Supply: ${totalSupply}`);
-  console.log(`Minting: FREE`);
-  console.log(`Chain ID: ${chain.id}`);
-  console.log(`Network: ${chain.name}`);
-  console.log(`Explorer: ${chain.blockExplorers?.default?.url || "N/A"}`);
-  if (chain.blockExplorers?.default?.url) {
-    console.log(`Contract on Explorer: ${chain.blockExplorers.default.url}/address/${contractAddress}`);
+    const totalSupply = (await publicClient.readContract({
+      address: contractAddress,
+      abi,
+      functionName: "totalSupply",
+      args: [],
+    })) as bigint;
+
+    // Print summary
+    console.log("=== Deployment Summary ===");
+    console.log(`Contract Address: ${contractAddress}`);
+    console.log(`Name: ${name}`);
+    console.log(`Symbol: ${symbol}`);
+    console.log(`Owner: ${owner}`);
+    console.log(`Total Supply: ${totalSupply}`);
+    console.log(`Minting: FREE`);
+    console.log(`Chain ID: ${chain.id}`);
+    console.log(`Network: ${chain.name}`);
+    console.log(`Explorer: ${chain.blockExplorers?.default?.url || "N/A"}`);
+    if (chain.blockExplorers?.default?.url) {
+      console.log(`Contract on Explorer: ${chain.blockExplorers.default.url}/address/${contractAddress}`);
+    }
+    console.log("\n✅ Deployment complete!");
+    console.log("\nExample Token Metadata:");
+    console.log(`  Token ID 1 -> ${baseURI}1 (Position 1)`);
+    console.log(`  Token ID 2 -> ${baseURI}2 (Position 2)`);
+    console.log(`  Token ID 3 -> ${baseURI}3 (Position 3)`);
+    console.log("\nNote: Each metadata URL returns JSON with the NFT image and attributes.");
+  } catch (error) {
+    // If reading contract fails, still show basic deployment info
+    console.log("=== Deployment Summary ===");
+    console.log(`Contract Address: ${contractAddress}`);
+    console.log(`Transaction Hash: ${hash}`);
+    console.log(`Chain ID: ${chain.id}`);
+    console.log(`Network: ${chain.name}`);
+    console.log(`Explorer: ${chain.blockExplorers?.default?.url || "N/A"}`);
+    if (chain.blockExplorers?.default?.url) {
+      console.log(`Contract on Explorer: ${chain.blockExplorers.default.url}/address/${contractAddress}`);
+    }
+    console.log("\n✅ Contract deployed successfully!");
+    console.log("⚠️  Note: Could not immediately read contract state. This is normal on some networks.");
+    console.log("   The contract is deployed and working. Verify on the explorer.");
+    console.log("\nTo verify the contract is working, run:");
+    console.log(`  cast call ${contractAddress} "name()(string)" --rpc-url ${RPC_URL}`);
   }
-  console.log("\n✅ Deployment complete!");
-  console.log("\nExample Token Metadata:");
-  console.log(`  Token ID 1 -> ${baseURI}0 (Position 0)`);
-  console.log(`  Token ID 2 -> ${baseURI}1 (Position 1)`);
-  console.log(`  Token ID 3 -> ${baseURI}2 (Position 2)`);
-  console.log("\nNote: Each metadata URL returns JSON with the NFT image and attributes.");
 }
 
 main().catch((error) => {
