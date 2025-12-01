@@ -25,6 +25,7 @@
     "scripts:deploy": "tsx contracts/js-scripts/deploy.ts",
     "scripts:deploy-token": "tsx contracts/js-scripts/deploy-token.ts",
     "scripts:deploy-nft": "tsx contracts/js-scripts/deploy-nft.ts",
+    "scripts:buy-nft": "tsx contracts/js-scripts/buy-nft.ts",
     "scripts:interact": "tsx contracts/js-scripts/interact.ts"
   },
   "dependencies": {
