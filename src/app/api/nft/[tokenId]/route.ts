@@ -8,10 +8,10 @@ export const runtime = 'edge';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { tokenId: string } }
+  { params }: { params: Promise<{ tokenId: string }> }
 ) {
   try {
-    const tokenId = params.tokenId;
+    const { tokenId } = await params;
     const position = parseInt(tokenId, 10);
 
     // Validate token ID
