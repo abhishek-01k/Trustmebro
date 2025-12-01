@@ -60,9 +60,27 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "@prisma/client",
-      "@prisma/engines",
-      "prisma"
+      " ",
+      "\"",
+      ",",
+      "/",
+      "@",
+      "@reown/appkit",
+      "[",
+      "]",
+      "a",
+      "bufferutil",
+      "e",
+      "g",
+      "i",
+      "m",
+      "n",
+      "p",
+      "r",
+      "s",
+      "sharp",
+      "unrs-resolver",
+      "utf-8-validate"
     ]
   }
 }

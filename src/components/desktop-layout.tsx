@@ -1,4 +1,3 @@
-import Image from "next/image";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight } from "lucide-react";
@@ -27,7 +26,7 @@ const DesktopLayout = () => {
             try {
               // Try window.open first
               const newWindow = window.open(
-                "https://farcaster.xyz/miniapps/9OlQm7ZO9S_M/farfield",
+                "https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro",
                 "_blank",
                 "noopener,noreferrer"
               );
@@ -39,12 +38,12 @@ const DesktopLayout = () => {
                 typeof newWindow.closed === "undefined"
               ) {
                 window.location.href =
-                  "https://farcaster.xyz/miniapps/9OlQm7ZO9S_M/farfield";
+                  "https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro";
               }
             } catch {
               // Fallback if window.open fails
               window.location.href =
-                "https://farcaster.xyz/miniapps/9OlQm7ZO9S_M/farfield";
+                "https://farcaster.xyz/miniapps/vjnwKcePmS0G/trust-me-bro";
             }
           }}
         >
