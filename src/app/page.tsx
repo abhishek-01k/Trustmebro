@@ -101,7 +101,10 @@ export default function Home() {
     <div className="h-screen flex flex-col overflow-hidden">
       <HeaderSection />
       <BodySection />
-      <BottomNavigation />
+      
+
+      {/* We will enable this after  the launch of the app */}
+      {/* <BottomNavigation /> */}
     </div>
   );
 }

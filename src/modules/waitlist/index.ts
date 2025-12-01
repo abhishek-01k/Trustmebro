@@ -1,0 +1,1 @@
+export { default as WaitlistSection } from "./waitlist-section";
