@@ -5,7 +5,7 @@ import { PrivyProvider as ReactPrivyProvider } from "@privy-io/react-auth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MiniAppProvider } from "../context/mini-app-context";
 import { GlobalContextProvider } from "../context/global-context";
-import { WagmiProvider } from "wagmi";
+import { WagmiProvider } from "@privy-io/wagmi";
 import { wagmiConfig } from "../config/wagmi-config";
 
 const Providers = ({ children }: { children: React.ReactNode }) => {

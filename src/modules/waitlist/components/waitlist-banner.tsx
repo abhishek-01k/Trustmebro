@@ -4,9 +4,10 @@ import { useWaitlistStatus, useJoinWaitlist } from '@/queries/waitlist'
 import { usePrivy, useWallets } from '@privy-io/react-auth'
 import { sdk } from '@farcaster/miniapp-sdk'
 import WaitlistBannerSkeleton from './waitlist-banner-skeleton'
-import { useWriteContract, usePublicClient, useReadContract } from 'wagmi'
+import { useReadContract } from 'wagmi'
 import { NFT_CONTRACT_ADDRESS, TRUST_ME_BRO_NFT_ABI } from '@/constants'
-import { parseEventLogs } from 'viem'
+import { createPublicClient, http } from 'viem'
+import { base } from 'viem/chains'
 
 const WaitlistBanner = () => {
   const { user } = usePrivy()
@@ -15,9 +16,6 @@ const WaitlistBanner = () => {
   const joinWaitlist = useJoinWaitlist()
   const [isMintingNFT, setIsMintingNFT] = useState(false)
   const [mintError, setMintError] = useState<string | null>(null)
-
-  const { writeContractAsync } = useWriteContract()
-  const publicClient = usePublicClient()
 
   // Check if user already has an NFT
   const { data: hasNft } = useReadContract({
@@ -46,18 +44,35 @@ const WaitlistBanner = () => {
       setMintError(null)
 
       if (!NFT_CONTRACT_ADDRESS) {
-        throw new Error('NFT contract address not configured. Please set NEXT_PUBLIC_NFT_CONTRACT_ADDRESS')
+        throw new Error('NFT contract address not configured')
       }
 
-      const txHash = await writeContractAsync({
-        address: NFT_CONTRACT_ADDRESS,
-        abi: TRUST_ME_BRO_NFT_ABI,
-        functionName: 'mint',
+      const wallet = wallets[0]
+      if (!wallet) {
+        throw new Error('No wallet available')
+      }
+
+      // Switch to Base chain if needed
+      await wallet.switchChain(base.id)
+
+      // Get the wallet provider directly from Privy
+      const provider = await wallet.getEthereumProvider()
+
+      // Send mint transaction
+      const txHash = await provider.request({
+        method: 'eth_sendTransaction',
+        params: [{
+          from: wallet.address as `0x${string}`,
+          to: NFT_CONTRACT_ADDRESS,
+          data: '0x1249c58b', // mint() function selector
+        }],
+      }) as `0x${string}`
+
+      // Create public client to wait for receipt
+      const publicClient = createPublicClient({
+        chain: base,
+        transport: http(),
       })
-
-      if (!publicClient) {
-        throw new Error('Public client not available')
-      }
 
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash,
@@ -68,19 +83,7 @@ const WaitlistBanner = () => {
         throw new Error('Transaction failed')
       }
 
-      // Step 4: Parse the NFTMinted event to get tokenId
-      const logs = parseEventLogs({
-        abi: TRUST_ME_BRO_NFT_ABI,
-        logs: receipt.logs,
-        eventName: 'NFTMinted',
-      })
-
-      const mintedTokenId = logs[0]?.args?.tokenId
-
-      if (!mintedTokenId) {
-        throw new Error('Failed to get token ID from transaction')
-      }
-
+      // Transaction succeeded - NFT was minted, join waitlist
       await new Promise<void>((resolve, reject) => {
         joinWaitlist.mutate(
           {
@@ -100,7 +103,7 @@ const WaitlistBanner = () => {
       // Refresh waitlist status
       await refetchWaitlistStatus()
     } catch (err) {
-      console.error('Error joining waitlist and minting NFT:', err)
+      console.error('Error minting NFT:', err)
       setMintError(err instanceof Error ? err.message : 'Failed to mint NFT')
     } finally {
       setIsMintingNFT(false)
