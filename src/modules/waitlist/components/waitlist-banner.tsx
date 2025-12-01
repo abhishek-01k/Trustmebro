@@ -45,24 +45,6 @@ const WaitlistBanner = () => {
       setIsMintingNFT(true)
       setMintError(null)
 
-      // Step 1: Join waitlist in database
-      await new Promise<void>((resolve, reject) => {
-        joinWaitlist.mutate(
-          {
-            farcasterFid: user.farcaster!.fid!,
-            username: user.farcaster!.username || '',
-            displayName: user.farcaster!.displayName || undefined,
-            avatar: user.farcaster!.pfp || undefined,
-            walletAddress: wallets[0]?.address || undefined,
-          },
-          {
-            onSuccess: () => resolve(),
-            onError: reject,
-          }
-        )
-      })
-
-      // Step 2: Mint NFT on-chain (user pays gas)
       if (!NFT_CONTRACT_ADDRESS) {
         throw new Error('NFT contract address not configured. Please set NEXT_PUBLIC_NFT_CONTRACT_ADDRESS')
       }
@@ -73,7 +55,6 @@ const WaitlistBanner = () => {
         functionName: 'mint',
       })
 
-      // Step 3: Wait for transaction confirmation
       if (!publicClient) {
         throw new Error('Public client not available')
       }
@@ -99,6 +80,22 @@ const WaitlistBanner = () => {
       if (!mintedTokenId) {
         throw new Error('Failed to get token ID from transaction')
       }
+
+      await new Promise<void>((resolve, reject) => {
+        joinWaitlist.mutate(
+          {
+            farcasterFid: user.farcaster!.fid!,
+            username: user.farcaster!.username || '',
+            displayName: user.farcaster!.displayName || undefined,
+            avatar: user.farcaster!.pfp || undefined,
+            walletAddress: wallets[0]?.address || undefined,
+          },
+          {
+            onSuccess: () => resolve(),
+            onError: reject,
+          }
+        )
+      })
 
       // Refresh waitlist status
       await refetchWaitlistStatus()
