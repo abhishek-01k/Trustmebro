@@ -7,7 +7,7 @@ import WaitlistBannerSkeleton from './waitlist-banner-skeleton'
 
 const WaitlistBanner = () => {
   const { user } = usePrivy()
-  const { data: waitlistStatus, isLoading } = useWaitlistStatus()
+  const { data: waitlistStatus, isLoading,refetch: refetchWaitlistStatus } = useWaitlistStatus()
   const joinWaitlist = useJoinWaitlist()
 
   const handleJoinWaitlist = async () => {
@@ -22,6 +22,8 @@ const WaitlistBanner = () => {
       avatar: user.farcaster.pfp || undefined,
       walletAddress: user.wallet?.address || undefined,
     })
+    
+    refetchWaitlistStatus()
   }
 
   const castHandler = async () => {
@@ -30,7 +32,8 @@ const WaitlistBanner = () => {
     }
 
     try {
-      const castText = `I'm #${waitlistStatus.position} on the TrustMeBro waitlist! Join me and ${waitlistStatus.totalSignups} others for early access 🎮`;
+      // const castText = `I'm #${waitlistStatus.position} on the TrustMeBro waitlist! Join me and ${waitlistStatus.totalSignups} others for early access 🎮`;
+      const castText = `⭕️ TrustmeBro waitlist: ${waitlistStatus.totalSignups} degens and counting. Position #${waitlistStatus.position} locked. Trust me bro!`;
 
       await sdk.actions.composeCast({
         text: castText,
