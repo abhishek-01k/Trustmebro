@@ -8,6 +8,7 @@ import {  Wallet } from "lucide-react";
 
 const HeaderSection = () => {
   const { wallets } = useWallets();
+  console.log("wallets", wallets);
 
   const walletAddress = wallets[0]?.address as `0x${string}` | undefined;
 

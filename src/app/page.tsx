@@ -7,16 +7,21 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import LoadingScreen from "../components/loading-screen";
 import {
   BodySection,
+  BottomNavigation,
   HeaderSection,
 } from "../components/layout";
 import { useRegisterUser } from "@/queries/user";
 import DesktopLayout from "@/components/desktop-layout";
+import { Button } from "@/components/ui/button";
+import { useGlobalContext } from "@/context/global-context";
+import { GameScreen } from "./game/page";
 
 export default function Home() {
-  const { ready, authenticated, user } = usePrivy(); // Removed unused 'login'
+  const { ready, authenticated, user, login } = usePrivy(); // Removed unused 'login'
   const { initLoginToMiniApp, loginToMiniApp } = useLoginToMiniApp();
   const { mutate: registerUser } = useRegisterUser();
   const [isMiniApp, setIsMiniApp] = useState(false);
+  const { activeTab } = useGlobalContext();
 const { wallets } = useWallets();
 
   const registeredUserIdRef = useRef<string | null>(null);
@@ -94,22 +99,31 @@ const { wallets } = useWallets();
     checkMiniApp();
   }, []);
 
-  if (!isMiniApp) {
-    return <DesktopLayout />;
+  // if (!isMiniApp) {
+  //   return <DesktopLayout />;
+  // }
+
+  console.log("user", user);
+  
+  if (!ready) {
+    return <LoadingScreen />;
   }
 
-  if (!ready || !authenticated) {
-    return <LoadingScreen />;
+  if(!authenticated) {
+    return <Button onClick={() => (login())}>Login</Button>;
+  }
+
+  if(activeTab === 'game') {
+    return <GameScreen />;
   }
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <HeaderSection />
       <BodySection />
-      
 
       {/* We will enable this after  the launch of the app */}
-      {/* <BottomNavigation /> */}
+      <BottomNavigation />
     </div>
   );
 }
