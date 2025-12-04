@@ -7,6 +7,7 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import LoadingScreen from "../components/loading-screen";
 import {
   BodySection,
+  BottomNavigation,
   HeaderSection,
 } from "../components/layout";
 import { useRegisterUser } from "@/queries/user";
@@ -94,10 +95,12 @@ const { wallets } = useWallets();
     checkMiniApp();
   }, []);
 
-  if (!isMiniApp) {
-    return <DesktopLayout />;
-  }
+  // if (!isMiniApp) {
+  //   return <DesktopLayout />;
+  // }
 
+  console.log("user", user);
+  
   if (!ready || !authenticated) {
     return <LoadingScreen />;
   }
@@ -106,10 +109,9 @@ const { wallets } = useWallets();
     <div className="h-screen flex flex-col overflow-hidden">
       <HeaderSection />
       <BodySection />
-      
 
       {/* We will enable this after  the launch of the app */}
-      {/* <BottomNavigation /> */}
+      <BottomNavigation />
     </div>
   );
 }

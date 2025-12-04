@@ -71,22 +71,18 @@
       ",",
       "/",
       "@",
-      "@reown/appkit",
       "[",
       "]",
       "a",
-      "bufferutil",
       "e",
       "g",
       "i",
+      "keccak",
       "m",
       "n",
       "p",
       "r",
-      "s",
-      "sharp",
-      "unrs-resolver",
-      "utf-8-validate"
+      "s"
     ]
   }
 }
