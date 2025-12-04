@@ -12,12 +12,16 @@ import {
 } from "../components/layout";
 import { useRegisterUser } from "@/queries/user";
 import DesktopLayout from "@/components/desktop-layout";
+import { Button } from "@/components/ui/button";
+import { useGlobalContext } from "@/context/global-context";
+import { GameScreen } from "./game/page";
 
 export default function Home() {
-  const { ready, authenticated, user } = usePrivy(); // Removed unused 'login'
+  const { ready, authenticated, user, login } = usePrivy(); // Removed unused 'login'
   const { initLoginToMiniApp, loginToMiniApp } = useLoginToMiniApp();
   const { mutate: registerUser } = useRegisterUser();
   const [isMiniApp, setIsMiniApp] = useState(false);
+  const { activeTab } = useGlobalContext();
 const { wallets } = useWallets();
 
   const registeredUserIdRef = useRef<string | null>(null);
@@ -101,8 +105,16 @@ const { wallets } = useWallets();
 
   console.log("user", user);
   
-  if (!ready || !authenticated) {
+  if (!ready) {
     return <LoadingScreen />;
+  }
+
+  if(!authenticated) {
+    return <Button onClick={() => (login())}>Login</Button>;
+  }
+
+  if(activeTab === 'game') {
+    return <GameScreen />;
   }
 
   return (
