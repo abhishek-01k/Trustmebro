@@ -162,10 +162,10 @@ export function GameScreen() {
     setViewOffset(0)
   }, [generateLevel])
 
-  // Get visible levels - current + next 6 with offset
+  // Get visible levels - current + next 4 upcoming only
   const visibleLevels = useMemo(() => {
     const startIdx = currentLevel - 1 + viewOffset
-    const endIdx = Math.min(levels.length, startIdx + 7)
+    const endIdx = Math.min(levels.length, startIdx + 5)
     return levels.slice(startIdx, endIdx)
   }, [levels, currentLevel, viewOffset])
 
@@ -228,21 +228,20 @@ export function GameScreen() {
           className={`flex-1 relative overflow-hidden ${gameState !== 'playing' ? 'invisible' : ''}`}
           style={{ perspective: '800px', perspectiveOrigin: 'center 80%' }}
         >
-          {/* Perspective Bridge - Neon cyan to purple gradient - starts from door */}
+          {/* Perspective Bridge - Solid purple gradient like reference */}
           <div 
             className="absolute pointer-events-none"
             style={{
-              background: 'linear-gradient(180deg, rgba(6, 182, 212, 0.4) 0%, rgba(139, 92, 246, 0.6) 40%, rgba(236, 72, 153, 0.75) 100%)',
+              background: 'linear-gradient(180deg, rgba(88, 28, 135, 0.95) 0%, rgba(126, 34, 206, 0.9) 40%, rgba(147, 51, 234, 0.85) 100%)',
               width: '100%',
               height: '55%',
               left: 0,
               bottom: 0,
-              clipPath: 'polygon(42% 0%, 58% 0%, 100% 100%, 0% 100%)',
-              boxShadow: 'inset 0 0 60px rgba(6, 182, 212, 0.3)',
+              clipPath: 'polygon(44% 0%, 56% 0%, 100% 100%, 0% 100%)',
             }}
           />
           
-          {/* Neon grid lines overlay - starts from door */}
+          {/* Neon grid lines overlay */}
           <div 
             className="absolute pointer-events-none"
             style={{
@@ -250,12 +249,12 @@ export function GameScreen() {
               height: '55%',
               left: 0,
               bottom: 0,
-              clipPath: 'polygon(42% 0%, 58% 0%, 100% 100%, 0% 100%)',
+              clipPath: 'polygon(44% 0%, 56% 0%, 100% 100%, 0% 100%)',
               backgroundImage: `
-                linear-gradient(rgba(6, 182, 212, 0.4) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(6, 182, 212, 0.3) 1px, transparent 1px)
+                linear-gradient(rgba(168, 85, 247, 0.5) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(168, 85, 247, 0.4) 1px, transparent 1px)
               `,
-              backgroundSize: '40px 30px',
+              backgroundSize: '50px 35px',
             }}
           />
 
@@ -285,10 +284,9 @@ export function GameScreen() {
             </button>
           </div>
 
-          {/* Levels Container with 3D */}
+          {/* Levels Container - tiles stacked on perspective line */}
           <div 
-            className="absolute inset-0 flex flex-col items-center justify-end pb-4 overflow-hidden"
-            style={{ transformStyle: 'preserve-3d' }}
+            className="absolute inset-0 flex flex-col items-center justify-end overflow-hidden"
           >
             {[...visibleLevels].reverse().map((level, reverseIdx) => {
               const idx = visibleLevels.length - 1 - reverseIdx
@@ -297,29 +295,30 @@ export function GameScreen() {
               const isCurrentLevel = idx === 0 && viewOffset === 0
               const isViewingLevel = idx === 0
               
-              // 3D transform values
-              const baseY = isViewingLevel ? 0 : 280 + distanceFromCurrent * 90
-              const rotateX = isViewingLevel ? 0 : -70
-              const translateZ = isViewingLevel ? 0 : 20
-              const scale = isViewingLevel ? 1 : Math.max(0.5, 0.85 - distanceFromCurrent * 0.08)
+              // Position tiles ON the perspective line - current at bottom edge, upcoming stacked tightly above
+              // Current tile: at bottom with gap from edge
+              // Upcoming tiles: stacked with small gaps, staying within perspective line
+              const baseBottom = isViewingLevel ? 25 : 140 + distanceFromCurrent * 40
               
-              // Opacity and effects - fade into infinity
-              const opacity = isViewingLevel ? 1 : Math.max(0.25, 1 - distanceFromCurrent * 0.15)
-              const brightness = isViewingLevel ? 1 : Math.max(0.5, 1 - distanceFromCurrent * 0.12)
-              const blur = isViewingLevel ? 0 : Math.min(1.5, distanceFromCurrent * 0.35)
+              // Scale decreases quickly to fit within the narrowing perspective
+              const scale = isViewingLevel ? 1 : Math.max(0.2, 0.55 - distanceFromCurrent * 0.1)
+              
+              // Opacity and blur - fade more aggressively
+              const opacity = isViewingLevel ? 1 : Math.max(0.25, 0.8 - distanceFromCurrent * 0.18)
+              const brightness = isViewingLevel ? 1 : Math.max(0.4, 0.75 - distanceFromCurrent * 0.12)
+              const blur = isViewingLevel ? 0 : Math.min(2, distanceFromCurrent * 0.5)
               
               return (
                 <div
                   key={level.level}
-                  className="absolute transition-all duration-500 ease-out"
+                  className="absolute left-1/2 transition-all duration-500 ease-out"
                   style={{
-                    transformStyle: 'preserve-3d',
-                    transform: `translateY(-${baseY}px) rotateX(${rotateX}deg) translateZ(${translateZ}px) scale(${scale})`,
-                    transformOrigin: 'center center',
+                    transform: `translateX(-50%) scale(${scale})`,
+                    transformOrigin: 'center bottom',
                     opacity,
                     filter: `brightness(${brightness}) blur(${blur}px)`,
                     zIndex: 100 - distanceFromCurrent,
-                    bottom: '30px',
+                    bottom: `${baseBottom}px`,
                     pointerEvents: isViewingLevel ? 'auto' : 'none',
                   }}
                 >
