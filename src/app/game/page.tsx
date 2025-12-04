@@ -127,7 +127,7 @@ export function GameScreen() {
           setCurrentLevel(prev => prev + 1)
           setSlideOffset(0)
           setIsAnimating(false)
-        }, 400)
+        }, 150)
       }
     }, 300)
   }, [gameState, isAnimating, currentLevel, levels, totalMultiplier, generateLevel])
@@ -207,14 +207,14 @@ export function GameScreen() {
           >
             {/* Left perspective line - wider angle */}
             <line 
-              x1="20" y1="600" 
+              x1="0" y1="600" 
               x2="170" y2="0" 
               stroke="rgba(255,255,255,0.15)" 
               strokeWidth="1.5"
             />
             {/* Right perspective line - wider angle */}
             <line 
-              x1="380" y1="600" 
+              x1="400" y1="600" 
               x2="230" y2="0" 
               stroke="rgba(255,255,255,0.15)" 
               strokeWidth="1.5"
