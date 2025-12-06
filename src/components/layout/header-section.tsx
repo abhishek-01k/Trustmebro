@@ -2,17 +2,18 @@ import React, { useMemo } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { useReadContract } from "wagmi";
 import { base } from "wagmi/chains";
-import { USDC_ADDRESS, USDC_DECIMALS, USDC_ABI } from "@/constants";
 import { formatUnits } from "viem";
 import {  Wallet } from "lucide-react";
+import { USDC_ABI, USDC_DECIMALS, USDC_TOKEN_ADDRESS } from "@/constants/contract";
 
 const HeaderSection = () => {
   const { wallets } = useWallets();
+  console.log("wallets", wallets);
 
   const walletAddress = wallets[0]?.address as `0x${string}` | undefined;
 
   const { data: balance, isLoading } = useReadContract({
-    address: USDC_ADDRESS,
+    address: USDC_TOKEN_ADDRESS,
     abi: USDC_ABI,
     functionName: "balanceOf",
     args: walletAddress ? [walletAddress] : undefined,

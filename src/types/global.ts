@@ -1,4 +1,4 @@
-export type ActiveTab = 'home' | 'leaderboard' | 'profile' | 'coming-soon';
+export type ActiveTab = 'home' | 'leaderboard' | 'profile' | 'coming-soon' | 'game';
 
 export interface LeaderboardEntry {
     rank: number;

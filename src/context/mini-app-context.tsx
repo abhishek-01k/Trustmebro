@@ -14,7 +14,7 @@ const MiniAppProvider = ({ children }: { children: React.ReactNode }) => {
         const contextData = await sdk.context;
         setContext(contextData);
         sdk.actions.ready();
-        await sdk.actions.addMiniApp();
+        // await sdk.actions.addMiniApp();
       } catch (error) {
         console.error("Error initializing Farcaster SDK:", error);
       }

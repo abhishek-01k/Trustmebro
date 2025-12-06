@@ -39,7 +39,7 @@ export class ContractClient {
 
   constructor(
     rpcUrl: string = process.env.RPC_URL || 'http://localhost:8545',
-    contractAddress: Address = process.env.CONTRACT_ADDRESS as Address,
+    contractAddress: Address = process.env.NEXT_PUBLIC_GAME_CONTRACT_ADDRESS as Address,
     backendPrivateKey: Hash = process.env.BACKEND_PRIVATE_KEY as Hash
   ) {
     this.contractAddress = contractAddress;
