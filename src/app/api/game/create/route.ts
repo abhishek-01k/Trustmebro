@@ -8,8 +8,8 @@ import {
   calculatePayout,
   applyRTP,
   calculateCumulativeMultiplier,
+  type RowConfig,
 } from '@/lib/game-engine';
-import { GAME_MODES, validateGameMode, type GameModeType } from '@/lib/game-modes';
 import { getContractClient, generatePreliminaryGameId } from '@/lib/contract-client';
 import prisma from '@/lib/prisma';
 
@@ -21,14 +21,14 @@ import prisma from '@/lib/prisma';
  *
  * Request body:
  * - betAmount: string (token amount in wei)
- * - gameMode: 'EASY' | 'MEDIUM' | 'HARD' | 'EXTREME' (default: 'MEDIUM')
+ * - tilesPerRound: number[] (length 20, each between 2 and 5 inclusive)
  *
  * Response:
  * - sessionId: Backend session ID
  * - preliminaryGameId: bytes32 hex for contract
  * - commitmentHash: bytes32 hex for contract
  * - betAmount: string
- * - rowConfigs: Array of row configurations
+ * - rowConfigs: Array of row configurations (only tiles count, no deathTiles)
  * - estimatedMultipliers: Per-row multipliers
  * - maxMultiplier: Max possible multiplier (with RTP)
  * - contractAddress: Address to call createGame on
@@ -42,18 +42,51 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Parse request body
-    const body = await request.json();
-    const { betAmount, gameMode = 'MEDIUM' } = body;
+    const body = (await request.json()) as {
+      betAmount: string;
+      tilesPerRound?: number[];
+    };
+    const { betAmount, tilesPerRound } = body;
+    console.log("betAmount",betAmount);
 
-    // 3. Validate game mode
-    if (!validateGameMode(gameMode)) {
-      return apiError('INVALID_GAME_MODE', `Invalid game mode: ${gameMode}. Valid modes: EASY, MEDIUM, HARD, EXTREME`, 400);
+    // Validate betAmount is provided
+    if (!betAmount || typeof betAmount !== 'string') {
+      return apiError('INVALID_BET_AMOUNT', 'Bet amount is required', 400);
+    }
+
+    // 3. Validate tilesPerRound (custom game mode strategy)
+    if (!Array.isArray(tilesPerRound)) {
+      return apiError(
+        'INVALID_ROW_CONFIG',
+        'tilesPerRound must be an array of numbers',
+        400
+      );
+    }
+
+    if (tilesPerRound.length !== 10) {
+      return apiError(
+        'INVALID_ROW_CONFIG',
+        'tilesPerRound must contain exactly 10 entries',
+        400
+      );
+    }
+
+    const invalidTile = tilesPerRound.find(
+      (t) => typeof t !== 'number' || !Number.isInteger(t) || t < 2 || t > 5
+    );
+
+    if (invalidTile !== undefined) {
+      return apiError(
+        'INVALID_ROW_CONFIG',
+        'Each tilesPerRound value must be an integer between 2 and 5',
+        400
+      );
     }
 
     // 4. Validate bet amount
     let betAmountBigInt: bigint;
     try {
-      betAmountBigInt = BigInt(betAmount);
+      betAmountBigInt = BigInt(betAmount ?? '');
       if (betAmountBigInt <= 0n) {
         return apiError('INVALID_BET_AMOUNT', 'Bet amount must be greater than 0', 400);
       }
@@ -87,7 +120,7 @@ export async function POST(request: NextRequest) {
     if (contractState.isPaused) {
       return apiError('CONTRACT_PAUSED', 'Game contract is currently paused', 503);
     }
-
+    
     // 8. Check bet against max bet limit
     if (betAmountBigInt > contractState.maxBet) {
       return apiError(
@@ -97,8 +130,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 9. Get row configurations for game mode
-    const rowConfigs = GAME_MODES[gameMode as GameModeType];
+    // 9. Build row configurations from tilesPerRound
+    const rowConfigs: RowConfig[] = tilesPerRound.map((tiles) => ({
+      tiles,
+      deathTiles: 1,
+    }));
 
     // 10. Generate game seed and configuration
     const seed = generateGameSeed();
@@ -129,11 +165,12 @@ export async function POST(request: NextRequest) {
       data: {
         userId: user.id,
         preliminaryGameId,
-        betAmount: betAmount.toString(),
+        betAmount: betAmountBigInt.toString(),
         seed,
         commitmentHash,
         gameConfig: gameConfig as object,
-        gameMode,
+        // Custom strategy; we still persist a mode label for analytics
+        gameMode: 'CUSTOM',
         status: 'PENDING_CHAIN',
         currentRow: 0,
         currentMultiplier: 1,
@@ -142,12 +179,17 @@ export async function POST(request: NextRequest) {
     });
 
     // 16. Return data for frontend to call contract
+    // Only send tiles count to frontend, not deathTiles (security)
+    const frontendRowConfigs = rowConfigs.map((config) => ({
+      tiles: config.tiles,
+    }));
+
     return apiSuccess({
       sessionId: session.id,
       preliminaryGameId,
       commitmentHash,
-      betAmount: betAmount.toString(),
-      rowConfigs,
+      betAmount: betAmountBigInt.toString(),
+      rowConfigs: frontendRowConfigs,
       estimatedMultipliers: gameConfig.multipliers,
       maxMultiplier: maxMultiplierWithRTP,
       maxPayout: maxPayout.toString(),

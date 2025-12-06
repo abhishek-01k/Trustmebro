@@ -14,6 +14,7 @@ import { useRegisterUser } from "@/queries/user";
 import DesktopLayout from "@/components/desktop-layout";
 import { Button } from "@/components/ui/button";
 import { useGlobalContext } from "@/context/global-context";
+import { useActiveGame } from "@/queries/game";
 import { GameScreen } from "./game/page";
 
 export default function Home() {
@@ -22,7 +23,18 @@ export default function Home() {
   const { mutate: registerUser } = useRegisterUser();
   const [isMiniApp, setIsMiniApp] = useState(false);
   const { activeTab } = useGlobalContext();
-const { wallets } = useWallets();
+  const { wallets } = useWallets();
+
+  const { data: activeGame, isLoading: isLoadingActiveGame } = useActiveGame();
+  const hasActiveGameRef = useRef(false);
+
+  useEffect(() => {
+    if (activeGame && activeGame.status === "ACTIVE") {
+      hasActiveGameRef.current = true;
+    }
+  }, [activeGame]);
+
+  
 
   const registeredUserIdRef = useRef<string | null>(null);
 
@@ -103,8 +115,6 @@ const { wallets } = useWallets();
   //   return <DesktopLayout />;
   // }
 
-  console.log("user", user);
-  
   if (!ready) {
     return <LoadingScreen />;
   }
@@ -113,8 +123,16 @@ const { wallets } = useWallets();
     return <Button onClick={() => (login())}>Login</Button>;
   }
 
-  if(activeTab === 'game') {
+  if (!isLoadingActiveGame && (activeGame?.status === "ACTIVE" || hasActiveGameRef.current)) {
+    if (!activeGame && hasActiveGameRef.current) {
+      return <GameScreen />;
+    }
     return <GameScreen />;
+  }
+
+  // Reset ref when there's no game and we're not loading
+  if (!isLoadingActiveGame && !activeGame) {
+    hasActiveGameRef.current = false;
   }
 
   return (
