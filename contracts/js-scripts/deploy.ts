@@ -1,6 +1,6 @@
 import { createWalletClient, createPublicClient, http, type Address, type Chain } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { anvil, baseSepolia } from "viem/chains";
+import { anvil, baseSepolia, base } from "viem/chains";
 import {
   loadContractABI,
   loadContractBytecode,
@@ -17,6 +17,9 @@ const PRIVATE_KEY = process.env.PRIVATE_KEY || (NETWORK === "anvil"
 // Get chain configuration
 function getChain(): Chain {
   switch (NETWORK) {
+    case "base":
+      case "base-mainnet":
+        return base;
     case "base-sepolia":
     case "basesepolia":
       return baseSepolia;

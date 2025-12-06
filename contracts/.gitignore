@@ -1,4 +1,2 @@
 lib/*/*
 !lib/*/.gitmodules
-*.deployed-address.json
-.deployed-token.json
