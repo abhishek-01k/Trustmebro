@@ -7,17 +7,34 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import LoadingScreen from "../components/loading-screen";
 import {
   BodySection,
+  BottomNavigation,
   HeaderSection,
 } from "../components/layout";
 import { useRegisterUser } from "@/queries/user";
 import DesktopLayout from "@/components/desktop-layout";
+import { Button } from "@/components/ui/button";
+import { useGlobalContext } from "@/context/global-context";
+import { useActiveGame } from "@/queries/game";
+import { GameScreen } from "./game/page";
 
 export default function Home() {
-  const { ready, authenticated, user } = usePrivy(); // Removed unused 'login'
+  const { ready, authenticated, user, login } = usePrivy(); // Removed unused 'login'
   const { initLoginToMiniApp, loginToMiniApp } = useLoginToMiniApp();
   const { mutate: registerUser } = useRegisterUser();
   const [isMiniApp, setIsMiniApp] = useState(false);
-const { wallets } = useWallets();
+  const { activeTab } = useGlobalContext();
+  const { wallets } = useWallets();
+
+  const { data: activeGame, isLoading: isLoadingActiveGame } = useActiveGame();
+  const hasActiveGameRef = useRef(false);
+
+  useEffect(() => {
+    if (activeGame && activeGame.status === "ACTIVE") {
+      hasActiveGameRef.current = true;
+    }
+  }, [activeGame]);
+
+  
 
   const registeredUserIdRef = useRef<string | null>(null);
 
@@ -94,22 +111,37 @@ const { wallets } = useWallets();
     checkMiniApp();
   }, []);
 
-  if (!isMiniApp) {
-    return <DesktopLayout />;
+  // if (!isMiniApp) {
+  //   return <DesktopLayout />;
+  // }
+
+  if (!ready) {
+    return <LoadingScreen />;
   }
 
-  if (!ready || !authenticated) {
-    return <LoadingScreen />;
+  if(!authenticated) {
+    return <Button onClick={() => (login())}>Login</Button>;
+  }
+
+  if (!isLoadingActiveGame && (activeGame?.status === "ACTIVE" || hasActiveGameRef.current)) {
+    if (!activeGame && hasActiveGameRef.current) {
+      return <GameScreen />;
+    }
+    return <GameScreen />;
+  }
+
+  // Reset ref when there's no game and we're not loading
+  if (!isLoadingActiveGame && !activeGame) {
+    hasActiveGameRef.current = false;
   }
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <HeaderSection />
       <BodySection />
-      
 
       {/* We will enable this after  the launch of the app */}
-      {/* <BottomNavigation /> */}
+      <BottomNavigation />
     </div>
   );
 }

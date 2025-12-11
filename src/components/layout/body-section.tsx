@@ -1,40 +1,37 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useGlobalContext } from "@/context/global-context";
-// import { HomeScreen } from "@/modules/home";
-// import { LeaderboardScreen } from "@/modules/leaderboard";
-// import { ProfileScreen } from "@/modules/profile";
-// import { useUserProfile } from "@/queries/user";
-// import { useLeaderboard } from "@/queries/leaderboard";
-import { WaitlistSection } from "@/modules/waitlist";
+import { HomeScreen } from "@/modules/home";
+import { LeaderboardScreen } from "@/modules/leaderboard";
+import { ProfileScreen } from "@/modules/profile";
+import { useUserProfile } from "@/queries/user";
+import { useLeaderboard } from "@/queries/leaderboard";
 
 const BodySection = () => {
   const { activeTab } = useGlobalContext();
-  // const { data: userProfile, isLoading, error } = useUserProfile();
-  // const {
-  //   data: leaderboardData,
-  //   isLoading: leaderboardLoading,
-  //   error: leaderboardError,
-  // } = useLeaderboard();
-
+  const { data: userProfile, isLoading, error } = useUserProfile();
+  const {
+    data: leaderboardData,
+    isLoading: leaderboardLoading,
+    error: leaderboardError,
+  } = useLeaderboard();
+  
   return (
     <div className="flex-1 overflow-hidden">
-      {activeTab === "coming-soon" && <WaitlistSection />}
-
-      {/* {activeTab === "home" && <HomeScreen />}
+      {activeTab === "home" && <HomeScreen />}
       {activeTab === "leaderboard" && (
-        <LeaderboardScreen 
+        <LeaderboardScreen
           leaderboardData={leaderboardData}
           isLoading={leaderboardLoading}
           error={leaderboardError}
         />
       )}
       {activeTab === "profile" && (
-        <ProfileScreen 
-          userProfile={userProfile} 
-          isLoading={isLoading} 
-          error={error} 
+        <ProfileScreen
+          userProfile={userProfile}
+          isLoading={isLoading}
+          error={error}
         />
-      )} */}
+      )}
     </div>
   );
 };

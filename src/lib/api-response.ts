@@ -8,6 +8,7 @@ export type ApiErrorCode =
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'INVALID_BET_AMOUNT'
+  | 'INVALID_ROW_CONFIG'
   | 'INVALID_GAME_MODE'
   | 'INVALID_INPUT'
   | 'GAME_NOT_ACTIVE'

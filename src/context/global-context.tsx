@@ -17,10 +17,10 @@ export const GlobalContextProvider = ({
 }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<ActiveTab>('coming-soon');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('home');
 
   return (
-    <GlobalContext.Provider value={{ isLoggedIn, setIsLoggedIn, activeTab, setActiveTab }}>
+    <GlobalContext.Provider value={{ isLoggedIn, setIsLoggedIn, activeTab, setActiveTab}}>
       {children}
     </GlobalContext.Provider>
   );
